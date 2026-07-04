@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  api:
+    name: api (lint · build · test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run build
+      - name: Unit tests
+        run: npm run test:unit
+      - name: e2e tests (Testcontainers — isolation + lineage + auth gates)
+        # Docker is available on ubuntu runners; Testcontainers spins up real PostgreSQL 16.
+        run: npm test
+
+  admin-web:
+    name: admin-web (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/admin-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/admin-web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  platform-web:
+    name: platform-web (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/platform-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/platform-web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  # mobile (flutter analyze && flutter test) is added in M5 — apps/mobile is a placeholder in M1.

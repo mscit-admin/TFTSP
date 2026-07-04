@@ -360,7 +360,7 @@ export class PersonFormComponent {
     this.personService.list({ q: event.query, pageSize: 10 }).subscribe({
       next: (res) => {
         // Contract assumption: /persons has no gender filter in M1 → filter client-side.
-        const filtered = res.items.filter((p) => p.gender === gender);
+        const filtered = res.data.filter((p) => p.gender === gender);
         (gender === 'male' ? this.fatherSuggestions : this.motherSuggestions).set(filtered);
       },
       error: () => void 0,

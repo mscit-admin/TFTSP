@@ -46,6 +46,13 @@ CRUD. Entity: `{ id, parent_id, unit_type: tribe|branch|clan|family, name_ar, na
 
 Person entity fields: see `packages/shared-types/src/person.ts` (authored from Spec Section 5).
 
+**List envelope (reconciled):** `GET /persons` returns `{ data: Person[], page, pageSize, total }`.
+**Conflict errors (reconciled):** duplicate pre-check ⇒ `409 { messageKey: "errors.person.duplicate_candidates", details: { candidates } }`; optimistic-lock mismatch ⇒ `409 { messageKey: "errors.person.version_conflict" }`. Resubmit create with `confirmDuplicate: true`.
+
+## Tenant settings (`/api/v1/tenant/settings`) — tenant-scoped, Tribe Admin — **TODO (M1 gap)**
+Admin-web's settings page consumes `GET /tenant/settings` and `PATCH /tenant/settings` (logo key + colors)
+plus a stubbed logo upload. Backend endpoint not yet built — tracked as the one open M1 backend item.
+
 ## Unions (`/api/v1/unions`) — tenant-scoped
 CRUD + lifecycle: create, divorce, widow, remarry.
 Entity: `{ id, husband_id, wife_id, marriage_date?, status: active|divorced|widowed, end_date?, end_reason? }`.

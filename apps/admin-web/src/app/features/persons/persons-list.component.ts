@@ -169,7 +169,7 @@ export class PersonsListComponent {
     this.loading.set(true);
     this.personService.list({ q: this.query || undefined, page, pageSize }).subscribe({
       next: (res) => {
-        this.persons.set(res.items);
+        this.persons.set(res.data);
         this.total.set(res.total);
         this.loading.set(false);
       },

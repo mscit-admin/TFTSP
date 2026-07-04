@@ -1,10 +1,10 @@
 /**
  * Platform (tenant) types — mirrored from packages/shared-types/src/tenant.ts.
  *
- * NOTE (contract assumption): the create-tenant *request* body follows
- * API_CONTRACT.M1.md verbatim (snake_case: name_ar / name_en). The list
- * *response* is normalized by PlatformService to this canonical camelCase
- * shape, tolerating either casing the backend emits. See DECISIONS.md D-1xx.
+ * NOTE: the create-tenant *request* body is camelCase (nameAr / nameEn),
+ * matching the backend DTO and packages/shared-types CreateTenantDto (the
+ * frozen contract was reconciled to camelCase). The list *response* is
+ * normalized by PlatformService, tolerating either casing the backend emits.
  */
 
 export type TenantStatus = 'active' | 'suspended';
@@ -22,11 +22,11 @@ export interface TenantRow {
   usersCount: number;
 }
 
-/** Request body for POST /platform/tenants (wire shape = snake_case per contract). */
+/** Request body for POST /platform/tenants (camelCase — matches backend DTO). */
 export interface CreateTenantRequest {
   slug: string;
-  name_ar: string;
-  name_en: string;
+  nameAr: string;
+  nameEn: string;
   admin: {
     email: string;
     fullName: string;

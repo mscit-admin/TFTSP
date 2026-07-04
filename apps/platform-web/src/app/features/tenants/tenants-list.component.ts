@@ -250,8 +250,8 @@ export class TenantsListComponent {
     const v = this.form.getRawValue();
     const body: CreateTenantRequest = {
       slug: v.slug,
-      name_ar: v.nameAr,
-      name_en: v.nameEn,
+      nameAr: v.nameAr,
+      nameEn: v.nameEn,
       admin: {
         fullName: v.admin.fullName,
         email: v.admin.email,

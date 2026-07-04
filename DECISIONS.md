@@ -10,6 +10,12 @@ Every choice not spelled out by the spec is logged here (simplest viable option)
 - **D-005 DB roles:** migrations run as owner (`tftsp`), the app connects as `tftsp_app` WITHOUT BYPASSRLS so RLS is always enforced (Spec Section 4.2).
 - **D-006 Partial dates:** year-only birth/death stored as `YYYY-01-01` with a `*_precision` marker deferred to when the UI needs it; API accepts `YYYY` or full ISO.
 
+## Integration / reconciliation (Lead/PM, post-agent)
+- **D-300 Backend is source of truth for wire shape.** After all three agents landed, reconciled cross-agent mismatches to the backend's actual implementation: (a) persons list envelope `{ data, page, pageSize, total }` — flipped admin-web from `items`→`data`; (b) conflict `messageKey`s use backend snake_case (`errors.person.duplicate_candidates` / `version_conflict`) — flipped admin-web's two constants; (c) `POST /platform/tenants` body is camelCase (`nameAr`/`nameEn`, matches backend DTO + shared-types) — flipped platform-web from snake_case (supersedes the earlier platform-web D-102). Both web apps rebuilt clean after the flips.
+- **D-301 `docker-compose` api service wired** by the Lead using the backend's ready Dockerfile (owner runs `prisma migrate deploy`, app connects as `tftsp_app`); container-internal hostnames override the localhost `.env` defaults.
+- **D-302 CI** (`.github/workflows/ci.yml`): api lint+build+unit+e2e (Testcontainers isolation/lineage/auth gates) + both web builds. Flutter jobs deferred to M5.
+- **D-303 Tenant-settings endpoint is an open M1 backend gap** — admin-web's settings page assumes `GET/PATCH /tenant/settings`; backend did not build it. Tracked in the contract as TODO; dispatched to the Backend agent as a focused follow-up.
+
 ## platform-web (Platform-Web agent, M1)
 - **D-100 Angular 21 (not 22):** the environment's Node is `v22.22.2`; the Angular 22 CLI hard-requires `>=22.22.3` and refuses to run. Angular 21.2 (previous LTS, supports `^22.12`) is used instead — still "latest usable LTS" here. Bump to 22 once Node is updated.
 - **D-101 Zoneless change detection:** the Angular 21 scaffold ships zoneless by default (no `zone.js`). Kept it — matches the Signals-first mandate. All view state uses signals; templates read signals (incl. `LanguageService.isRtl()`) so they re-render reactively.

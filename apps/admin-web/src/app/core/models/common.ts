@@ -3,9 +3,9 @@
  * with docs/API_CONTRACT.M1.md conventions. If Backend formalises these, update the mirror.
  */
 
-/** Standard paginated list envelope. */
+/** Standard paginated list envelope (matches backend PersonsService: `{ data, page, pageSize, total }`). */
 export interface Paginated<T> {
-  items: T[];
+  data: T[];
   total: number;
   page: number;
   pageSize: number;
@@ -26,11 +26,11 @@ export interface ApiErrorBody {
 }
 
 /**
- * POST /persons may reject with duplicate candidates. Contract assumption (see report):
- * a 409 with `messageKey: 'errors.person.duplicateCandidates'` and
- * `details.candidates: DuplicateCandidate[]`. Resubmit with `confirmDuplicate: true`.
+ * POST /persons rejects with duplicate candidates as a 409 whose `messageKey` is
+ * `errors.person.duplicate_candidates` and `details.candidates: DuplicateCandidate[]`
+ * (backend ErrorKeys). Resubmit with `confirmDuplicate: true`.
  */
-export const DUPLICATE_MESSAGE_KEY = 'errors.person.duplicateCandidates';
+export const DUPLICATE_MESSAGE_KEY = 'errors.person.duplicate_candidates';
 
-/** PATCH /persons/:id version conflict. Contract assumption: 409 with this key. */
-export const VERSION_CONFLICT_MESSAGE_KEY = 'errors.person.versionConflict';
+/** PATCH /persons/:id version conflict: 409 with this backend key. */
+export const VERSION_CONFLICT_MESSAGE_KEY = 'errors.person.version_conflict';
