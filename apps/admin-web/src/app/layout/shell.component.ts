@@ -7,12 +7,15 @@ import { MessageService } from 'primeng/api';
 import { AuthService } from '../core/services/auth.service';
 import { LanguageService } from '../core/services/language.service';
 import { NotificationService } from '../core/services/notification.service';
+import { ViewRequestService } from '../core/services/view-request.service';
 import { NotificationBellComponent } from './notification-bell.component';
 
 interface NavItem {
   route: string;
   labelKey: string;
   icon: string;
+  /** optional count badge (e.g. pending view-requests) */
+  badge?: number;
 }
 
 @Component({
@@ -85,7 +88,14 @@ interface NavItem {
                 (click)="onNavClick()"
               >
                 <i class="pi {{ item.icon }}"></i>
-                <span>{{ item.labelKey | translate }}</span>
+                <span class="flex-1">{{ item.labelKey | translate }}</span>
+                @if (item.badge) {
+                  <span
+                    class="flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-semibold text-white"
+                  >
+                    {{ item.badge > 99 ? '99+' : item.badge }}
+                  </span>
+                }
               </a>
             }
           </nav>
@@ -108,6 +118,7 @@ export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
+  private readonly viewRequests = inject(ViewRequestService);
   private readonly messages = inject(MessageService);
   private readonly i18n = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
@@ -136,9 +147,19 @@ export class ShellComponent {
     items.push({ route: '/settings', labelKey: 'nav.settings', icon: 'pi-cog' });
     if (this.auth.isTribeAdmin()) {
       items.push({ route: '/workflow-settings', labelKey: 'nav.workflow', icon: 'pi-sliders-h' });
+      items.push({ route: '/visibility-settings', labelKey: 'nav.visibility', icon: 'pi-eye' });
+      items.push({
+        route: '/view-requests',
+        labelKey: 'nav.viewRequests',
+        icon: 'pi-id-card',
+        badge: this.pendingViewRequests() || undefined,
+      });
     }
     return items;
   });
+
+  /** Pending tree-view requests (Tribe Admin badge). */
+  readonly pendingViewRequests = signal(0);
 
   readonly userName = computed(() => this.auth.user()?.fullName ?? '');
   readonly tenantName = computed(() => {
@@ -158,6 +179,14 @@ export class ShellComponent {
         life: 5000,
       });
     });
+
+    // Pending tree-view requests badge (Tribe Admin only).
+    if (this.auth.isTribeAdmin()) {
+      this.viewRequests.list('pending').subscribe({
+        next: (list) => this.pendingViewRequests.set(list.length),
+        error: () => void 0,
+      });
+    }
   }
 
   onNavClick(): void {
