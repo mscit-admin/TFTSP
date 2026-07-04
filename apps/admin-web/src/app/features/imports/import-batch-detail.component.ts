@@ -238,9 +238,12 @@ export class ImportBatchDetailComponent {
         this.rollingBack.set(false);
         const body = err.error as ApiErrorBody | undefined;
         this.rollbackErrorKey.set(body?.messageKey ?? 'imports.rollback.refused');
-        // Contract: refusal returns the blocking dependency list in `details.dependencies`.
-        const deps = body?.details?.['dependencies'];
-        if (Array.isArray(deps)) this.blockingDeps.set(deps.map((d) => String(d)));
+        // Backend refusal (errors.import.rollback_blocked) returns the blocking records
+        // split across `details.dependentChildren[]` and `details.unions[]`.
+        const details = body?.details ?? {};
+        const children = Array.isArray(details['dependentChildren']) ? details['dependentChildren'] : [];
+        const unions = Array.isArray(details['unions']) ? details['unions'] : [];
+        this.blockingDeps.set([...children, ...unions].map((d) => String(d)));
       },
     });
   }
