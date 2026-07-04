@@ -1,0 +1,278 @@
+{
+  "app": {
+    "title": "Tribe Admin"
+  },
+  "common": {
+    "loading": "Loading…"
+  },
+  "nav": {
+    "menu": "Menu",
+    "persons": "Persons",
+    "tribalUnits": "Tribal Units",
+    "tree": "Family Tree",
+    "settings": "Tribe Settings",
+    "reviewQueue": "Review Queue",
+    "myRequests": "My Requests",
+    "workflow": "Workflow Settings",
+    "switchLanguage": "Switch language",
+    "logout": "Log out",
+    "readOnlyNotice": "You have read-only access. Editing requires an administrative role.",
+    "proposalNotice": "Your edits are submitted as change requests for admin review."
+  },
+  "auth": {
+    "loginSubtitle": "Sign in to manage your tribe's data.",
+    "email": "Email",
+    "password": "Password",
+    "login": "Log in"
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "view": "View"
+  },
+  "persons": {
+    "title": "Persons",
+    "new": "Add person",
+    "propose": "Propose person",
+    "proposalNotice": "You are not an administrator. Saving will submit this as a change request for review.",
+    "newTitle": "New person",
+    "editTitle": "Edit person",
+    "searchPlaceholder": "Search by name…",
+    "empty": "No persons found.",
+    "saved": "Person saved.",
+    "deleted": "Person deleted.",
+    "deleteConfirm": "Delete this person? This is a soft-delete and can be reversed by an admin.",
+    "versionConflict": "This record was modified by someone else. Reload and try again.",
+    "fields": {
+      "fullName": "Full name",
+      "firstName": "First name",
+      "fatherName": "Father's name",
+      "grandfatherName": "Grandfather's name",
+      "familyName": "Family name",
+      "laqab": "Laqab (title)",
+      "gender": "Gender",
+      "birthDate": "Birth date",
+      "birthPlace": "Birth place",
+      "isDeceased": "Deceased",
+      "deathDate": "Death date",
+      "deathPlace": "Death place",
+      "father": "Father",
+      "mother": "Mother",
+      "tribalUnit": "Tribal unit",
+      "profession": "Profession",
+      "status": "Status"
+    },
+    "hints": {
+      "partialDate": "Year-only is allowed (e.g. 1965 or 1965-03-12)."
+    },
+    "genderValue": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "statusValue": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "duplicates": {
+      "title": "Similar persons already exist",
+      "body": "The following persons look similar. Confirm you still want to create a new record.",
+      "similarity": "Similarity",
+      "confirmCreate": "Create anyway"
+    }
+  },
+  "tribalUnits": {
+    "title": "Tribal Units",
+    "addRoot": "Add tribe",
+    "addChild": "Add child unit",
+    "newTitle": "New unit",
+    "editTitle": "Edit unit",
+    "empty": "No tribal units yet.",
+    "saved": "Unit saved.",
+    "deleted": "Unit deleted.",
+    "deleteConfirm": "Delete this unit and detach its children?",
+    "type": {
+      "tribe": "Tribe",
+      "branch": "Branch",
+      "clan": "Clan",
+      "family": "Family"
+    },
+    "fields": {
+      "type": "Type",
+      "nameAr": "Name (Arabic)",
+      "nameEn": "Name (English)"
+    }
+  },
+  "settings": {
+    "title": "Tribe Settings",
+    "saved": "Settings saved.",
+    "logoStaged": "Logo staged for upload.",
+    "fields": {
+      "nameAr": "Tribe name (Arabic)",
+      "nameEn": "Tribe name (English)",
+      "logo": "Logo",
+      "logoKey": "Logo key",
+      "primaryColor": "Primary color",
+      "secondaryColor": "Secondary color"
+    },
+    "hints": {
+      "logoStub": "PNG or JPEG. Upload is finalized in a later milestone."
+    }
+  },
+  "tree": {
+    "title": "Family Tree",
+    "reload": "Reload",
+    "empty": "No tree data available.",
+    "m1Notice": "Basic tree preview. The interactive high-detail renderer arrives in a later milestone."
+  },
+  "changeRequests": {
+    "queueTitle": "Review Queue",
+    "mineTitle": "My Requests",
+    "detailTitle": "Change Request",
+    "filterStatus": "Filter by status",
+    "review": "Review",
+    "edit": "Edit & resubmit",
+    "actionNeeded": "Action needed",
+    "queueEmpty": "Nothing awaiting your review.",
+    "mineEmpty": "You have not submitted any change requests yet.",
+    "notFound": "Change request not found.",
+    "diffTitle": "Proposed changes",
+    "editPatchTitle": "Edit your proposal",
+    "saveDraft": "Save draft",
+    "resubmit": "Resubmit",
+    "resubmitted": "Resubmitted for review.",
+    "saved": "Draft saved.",
+    "reviewTitle": "Your review",
+    "reviewsTitle": "Reviews",
+    "commentPlaceholder": "Optional comment…",
+    "submitReview": "Submit review",
+    "reviewSubmitted": "Review submitted.",
+    "conflictNotice": "The target changed since this request was created. Edit and resubmit to resolve the conflict.",
+    "submitForReview": "Submit for review",
+    "submittedToast": "Submitted for review.",
+    "submittedForReview": "Your change request was submitted.",
+    "noChanges": "No changes to submit.",
+    "fields": {
+      "target": "Target",
+      "operation": "Operation",
+      "requester": "Requester",
+      "status": "Status",
+      "created": "Created",
+      "expires": "Expires"
+    },
+    "target": {
+      "person": "Person",
+      "union": "Marriage",
+      "tribal_unit": "Tribal unit"
+    },
+    "operation": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete"
+    },
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "under_review": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "changes_requested": "Changes requested",
+      "published": "Published",
+      "conflict": "Conflict",
+      "expired": "Expired"
+    },
+    "decision": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "request_changes": "Request changes"
+    },
+    "diff": {
+      "field": "Field",
+      "old": "Current",
+      "new": "Proposed",
+      "removed": "Removed"
+    }
+  },
+  "crFields": {
+    "firstName": "First name",
+    "fatherName": "Father's name",
+    "grandfatherName": "Grandfather's name",
+    "familyName": "Family name",
+    "laqab": "Laqab (title)",
+    "gender": "Gender",
+    "birthDate": "Birth date",
+    "birthPlace": "Birth place",
+    "isDeceased": "Deceased",
+    "deathDate": "Death date",
+    "deathPlace": "Death place",
+    "fatherId": "Father",
+    "motherId": "Mother",
+    "tribalUnitId": "Tribal unit",
+    "profession": "Profession"
+  },
+  "workflow": {
+    "title": "Workflow Settings",
+    "subtitle": "Configure how change requests are reviewed and approved for this tribe.",
+    "saved": "Workflow settings saved.",
+    "fields": {
+      "approvalsRequired": "Approvals required",
+      "expiryDays": "Request expiry (days)",
+      "reviewerCanEdit": "Reviewers may edit a request directly"
+    },
+    "hints": {
+      "approvalsRequired": "Number of distinct approvals (1–3) before a request is published.",
+      "expiryDays": "Requests not decided within this many days expire automatically."
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications.",
+    "messages": {
+      "change_request_submitted": "A new change request was submitted.",
+      "change_request_approved": "Your change request was approved.",
+      "change_request_rejected": "Your change request was rejected.",
+      "change_request_changes_requested": "Changes were requested on your request.",
+      "change_request_published": "Your change request was published.",
+      "change_request_expiring": "A change request is about to expire.",
+      "change_request_expired": "A change request has expired.",
+      "change_request_conflict": "Your change request has a conflict and was not applied."
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "auth": {
+      "loginFailed": "Login failed. Check your credentials.",
+      "invalidCredentials": "Invalid email or password.",
+      "accountLocked": "Account locked after too many attempts. Try again in 15 minutes."
+    },
+    "person": {
+      "duplicateCandidates": "Similar persons already exist.",
+      "versionConflict": "This record was modified by someone else."
+    }
+  },
+  "primeng": {
+    "accept": "Yes",
+    "reject": "No",
+    "clear": "Clear",
+    "apply": "Apply",
+    "emptyMessage": "No results found",
+    "emptyFilterMessage": "No results found",
+    "choose": "Choose",
+    "upload": "Upload",
+    "cancel": "Cancel",
+    "dayNames": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "dayNamesShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "dayNamesMin": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    "monthNames": [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ],
+    "monthNamesShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "today": "Today",
+    "weekHeader": "Wk"
+  }
+}

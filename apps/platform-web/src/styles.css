@@ -1,0 +1,38 @@
+/* Tailwind CSS v4 (CSS-first config) */
+@import 'tailwindcss';
+
+/* PrimeIcons */
+@import 'primeicons/primeicons.css';
+
+/* ------------------------------------------------------------------ *
+ * platform-web — SaaS Platform Ops Console
+ * Deliberately distinct branding from admin-web: a dark "mission
+ * control" slate/indigo shell to signal the platform security boundary.
+ * ------------------------------------------------------------------ */
+:root {
+  --pw-brand: #4f46e5;      /* indigo-600 */
+  --pw-brand-600: #4338ca;
+  --pw-shell: #0f172a;      /* slate-900 */
+  --pw-shell-2: #1e293b;    /* slate-800 */
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', Tahoma, sans-serif;
+}
+
+/* Direction-aware helpers driven by the <html dir> attribute. */
+[dir='rtl'] {
+  font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+}
+
+.pw-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.pw-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 4px;
+}

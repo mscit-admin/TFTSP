@@ -56,12 +56,30 @@ services:
       - "1025:1025"   # SMTP
       - "8025:8025"   # Web UI
 
-  # --- Application services (uncommented/owned by their agents) ---
-  # api:
-  #   build: ./apps/api
-  #   depends_on: [postgres, redis, minio]
-  #   env_file: .env
-  #   ports: ["3000:3000"]
+  # --- Application services ---
+  api:
+    build: ./apps/api
+    container_name: tftsp-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      # container-internal hostnames override the localhost defaults in .env
+      DATABASE_URL: "postgresql://tftsp_app:tftsp_app_pw@postgres:5432/tftsp?schema=public"
+      DATABASE_MIGRATION_URL: "postgresql://tftsp:tftsp_dev_pw@postgres:5432/tftsp?schema=public"
+      REDIS_HOST: "redis"
+      MINIO_ENDPOINT: "minio"
+      SMTP_HOST: "mailhog"
+    ports:
+      - "3000:3000"
+
+  # admin-web / platform-web are run via `ng serve` (or their own Dockerfiles) in dev;
+  # the Dockerfile-based service blocks are added when their images are finalised.
 
 volumes:
   pg_data:

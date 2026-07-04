@@ -1,0 +1,404 @@
+// TFTSP — M1 Prisma schema.
+// Tenancy model: Shared Schema + PostgreSQL RLS (Spec Section 2/4).
+// Every tenant-scoped table carries `tenant_id` and a composite index starting with it.
+// RLS policies, the `tftsp_app` role, pg_trgm and the generated `name_normalized`
+// column are created by the custom SQL migration in prisma/migrations (Prisma cannot
+// express those). See prisma/migrations/**/migration.sql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  super_admin
+  platform_admin
+  tribe_admin
+  deputy_admin
+  branch_admin
+  reviewer
+  contributor
+  viewer
+  guest
+}
+
+enum TenantStatus {
+  active
+  suspended
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum PersonStatus {
+  draft
+  published
+  archived
+}
+
+enum UnitType {
+  tribe
+  branch
+  clan
+  family
+}
+
+enum UnionStatus {
+  active
+  divorced
+  widowed
+}
+
+// ---- M2: Change Requests, Approval Workflow, Notifications ----
+
+enum ChangeTargetType {
+  person
+  union
+  tribal_unit
+}
+
+enum ChangeOperation {
+  create
+  update
+  delete
+}
+
+enum ChangeRequestStatus {
+  draft
+  submitted
+  under_review
+  approved
+  rejected
+  changes_requested
+  published
+  conflict
+  expired
+}
+
+enum ReviewDecision {
+  approve
+  reject
+  request_changes
+}
+
+enum NotificationType {
+  change_request_submitted
+  change_request_approved
+  change_request_rejected
+  change_request_changes_requested
+  change_request_published
+  change_request_expiring
+  change_request_expired
+  change_request_conflict
+}
+
+// ---------------------------------------------------------------------------
+// Platform-level tables (OUTSIDE RLS) — Spec Section 4.4
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id           String       @id @default(uuid()) @db.Uuid
+  slug         String       @unique
+  nameAr       String       @map("name_ar")
+  nameEn       String       @map("name_en")
+  status       TenantStatus @default(active)
+  logoKey      String?      @map("logo_key")
+  primaryColor String?      @map("primary_color")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  roleAssignments  RoleAssignment[]
+  persons          Person[]
+  unions           Union[]
+  tribalUnits      TribalUnit[]
+  auditLogs        AuditLog[]
+  changeRequests   ChangeRequest[]
+  notifications    Notification[]
+  workflowSettings WorkflowSettings?
+
+  @@map("tenants")
+}
+
+model User {
+  id                  String    @id @default(uuid()) @db.Uuid
+  email               String    @unique
+  fullName            String    @map("full_name")
+  passwordHash        String    @map("password_hash")
+  isSuperAdmin        Boolean   @default(false) @map("is_super_admin")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  roleAssignments RoleAssignment[]
+  refreshTokens   RefreshToken[]
+
+  @@map("users")
+}
+
+// Refresh-token rotation with reuse detection (Spec Section 4 / M1).
+// Platform-level: a token belongs to a user session, not a tenant.
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  familyId     String    @map("family_id") @db.Uuid // chain id; reuse revokes the whole family
+  tokenHash    String    @unique @map("token_hash")
+  tenantId     String?   @map("tenant_id") @db.Uuid // active tenant this session was minted for
+  expiresAt    DateTime  @map("expires_at")
+  revokedAt    DateTime? @map("revoked_at")
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Authorization metadata — carries tenant_id (kept OUT of RLS so the auth layer
+// can resolve a user's memberships BEFORE a tenant is bound). See DECISIONS D-101.
+// PolicyGuard reads it under an active tenant context. Composite index starts
+// with tenant_id per Spec Section 4.1.
+// ---------------------------------------------------------------------------
+
+model RoleAssignment {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  role         Role
+  tribalUnitId String?   @map("tribal_unit_id") @db.Uuid // scopes branch_admin and below
+  validFrom    DateTime  @default(now()) @map("valid_from")
+  validTo      DateTime? @map("valid_to")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tribalUnit TribalUnit? @relation(fields: [tribalUnitId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, userId])
+  @@index([userId])
+  @@map("role_assignments")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant-scoped tables (UNDER RLS) — Spec Section 4/5
+// ---------------------------------------------------------------------------
+
+model TribalUnit {
+  id       String   @id @default(uuid()) @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
+  parentId String?  @map("parent_id") @db.Uuid
+  unitType UnitType @map("unit_type")
+  nameAr   String   @map("name_ar")
+  nameEn   String   @map("name_en")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent          TribalUnit?      @relation("TribalUnitHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children        TribalUnit[]     @relation("TribalUnitHierarchy")
+  persons         Person[]
+  roleAssignments RoleAssignment[]
+
+  @@index([tenantId, parentId])
+  @@map("tribal_units")
+}
+
+model Person {
+  id              String       @id @default(uuid()) @db.Uuid
+  tenantId        String       @map("tenant_id") @db.Uuid
+  fullName        String       @map("full_name")
+  firstName       String       @map("first_name")
+  fatherName      String?      @map("father_name")
+  grandfatherName String?      @map("grandfather_name")
+  familyName      String?      @map("family_name")
+  laqab           String?      @map("laqab")
+  gender          Gender
+  birthDate       DateTime?    @map("birth_date")
+  birthPlace      String?      @map("birth_place")
+  deathDate       DateTime?    @map("death_date")
+  deathPlace      String?      @map("death_place")
+  isDeceased      Boolean      @default(false) @map("is_deceased")
+  fatherId        String?      @map("father_id") @db.Uuid
+  motherId        String?      @map("mother_id") @db.Uuid
+  tribalUnitId    String?      @map("tribal_unit_id") @db.Uuid
+  profession      String?      @map("profession")
+  photoKey        String?      @map("photo_key")
+  status          PersonStatus @default(published)
+  version         Int          @default(1)
+  createdBy       String       @map("created_by") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  deletedAt       DateTime?    @map("deleted_at")
+
+  // NOTE: `name_normalized text GENERATED ALWAYS AS (...) STORED` + its GIN(pg_trgm)
+  // index live only in the SQL migration; Prisma never reads/writes it (generated
+  // columns are not writable). Trigram search uses $queryRaw. See migration + Spec §8.
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tribalUnit TribalUnit? @relation(fields: [tribalUnitId], references: [id], onDelete: SetNull)
+
+  father   Person?  @relation("PersonFather", fields: [fatherId], references: [id], onDelete: SetNull)
+  children Person[] @relation("PersonFather")
+  mother   Person?  @relation("PersonMother", fields: [motherId], references: [id], onDelete: SetNull)
+  motherOf Person[] @relation("PersonMother")
+
+  unionsAsHusband Union[] @relation("UnionHusband")
+  unionsAsWife    Union[] @relation("UnionWife")
+
+  ancestorClosures   PersonClosure[] @relation("ClosureAncestor")
+  descendantClosures PersonClosure[] @relation("ClosureDescendant")
+
+  @@index([tenantId, fatherId])
+  @@index([tenantId, motherId])
+  @@index([tenantId, tribalUnitId])
+  @@index([tenantId, deletedAt])
+  @@map("persons")
+}
+
+model Union {
+  id           String      @id @default(uuid()) @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  husbandId    String      @map("husband_id") @db.Uuid
+  wifeId       String      @map("wife_id") @db.Uuid
+  marriageDate DateTime?   @map("marriage_date")
+  status       UnionStatus @default(active)
+  endDate      DateTime?   @map("end_date")
+  endReason    String?     @map("end_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  husband Person @relation("UnionHusband", fields: [husbandId], references: [id], onDelete: Cascade)
+  wife    Person @relation("UnionWife", fields: [wifeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, husbandId])
+  @@index([tenantId, wifeId])
+  @@map("unions")
+}
+
+// Closure table (Spec Section 5) — maintained atomically with father/mother edits.
+// depth 0 = self row for every person.
+model PersonClosure {
+  tenantId     String @map("tenant_id") @db.Uuid
+  ancestorId   String @map("ancestor_id") @db.Uuid
+  descendantId String @map("descendant_id") @db.Uuid
+  depth        Int
+
+  ancestor   Person @relation("ClosureAncestor", fields: [ancestorId], references: [id], onDelete: Cascade)
+  descendant Person @relation("ClosureDescendant", fields: [descendantId], references: [id], onDelete: Cascade)
+
+  @@id([ancestorId, descendantId])
+  @@index([tenantId, descendantId])
+  @@index([tenantId, ancestorId])
+  @@map("person_closures")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String // e.g. person.create, person.update, union.divorce, access.denied
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  before     Json?
+  after      Json?
+  ip         String?
+  requestId  String?  @map("request_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// M2 tenant-scoped tables (UNDER RLS) — Spec §3 M2
+// ---------------------------------------------------------------------------
+
+// One row per tenant. Approval workflow configuration.
+model WorkflowSettings {
+  tenantId          String   @id @map("tenant_id") @db.Uuid
+  approvalsRequired Int      @default(1) @map("approvals_required")
+  expiryDays        Int      @default(30) @map("expiry_days")
+  reviewerCanEdit   Boolean  @default(false) @map("reviewer_can_edit")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_settings")
+}
+
+model ChangeRequest {
+  id          String              @id @default(uuid()) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  targetType  ChangeTargetType    @map("target_type")
+  targetId    String?             @map("target_id") @db.Uuid
+  operation   ChangeOperation
+  patch       Json
+  status      ChangeRequestStatus @default(draft)
+  baseVersion Int?                @map("base_version")
+  createdBy   String              @map("created_by") @db.Uuid
+  expiresAt   DateTime            @map("expires_at")
+  publishedAt DateTime?           @map("published_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  tenant  Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reviews ChangeRequestReview[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdBy])
+  @@index([tenantId, expiresAt])
+  @@map("change_requests")
+}
+
+model ChangeRequestReview {
+  id              String         @id @default(uuid()) @db.Uuid
+  tenantId        String         @map("tenant_id") @db.Uuid
+  changeRequestId String         @map("change_request_id") @db.Uuid
+  reviewerId      String         @map("reviewer_id") @db.Uuid
+  decision        ReviewDecision
+  comment         String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  changeRequest ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+
+  // Each reviewer counts once per request (Spec §3 M2).
+  @@unique([changeRequestId, reviewerId])
+  @@index([tenantId, changeRequestId])
+  @@map("change_request_reviews")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, readAt])
+  @@index([tenantId, userId, createdAt])
+  @@map("notifications")
+}
