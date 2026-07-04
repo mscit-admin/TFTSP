@@ -48,6 +48,11 @@ export function streamUploadToMinio(
     }
 
     let handled = false;
+    // Busboy emits 'close' synchronously once the multipart body is parsed —
+    // which always precedes the async putStream resolve below. So 'close' must
+    // only raise NO_FILE when NO file part was seen at all; otherwise the
+    // putStream promise settles the outcome.
+    let fileSeen = false;
     const fail = (err: unknown): void => {
       if (!handled) {
         handled = true;
@@ -56,7 +61,9 @@ export function streamUploadToMinio(
     };
 
     busboy.on('file', (_name, fileStream, info) => {
+      fileSeen = true;
       let format: ImportFileFormat | undefined;
+      let sawData = false;
       const pass = new PassThrough();
 
       fileStream.on('limit', () => {
@@ -66,6 +73,7 @@ export function streamUploadToMinio(
       });
 
       fileStream.once('data', (firstChunk: Buffer) => {
+        sawData = true;
         format = detectFormat(firstChunk, info.filename ?? '');
         if (!format) {
           fileStream.resume();
@@ -85,12 +93,19 @@ export function streamUploadToMinio(
           .catch(fail);
       });
 
+      // Empty file part (no data chunk) — reject instead of hanging the request.
+      fileStream.on('end', () => {
+        if (!sawData) {
+          fail(AppException.badRequest(ErrorKeys.IMPORT_NO_FILE));
+        }
+      });
+
       fileStream.on('error', fail);
     });
 
     busboy.on('error', fail);
     busboy.on('close', () => {
-      if (!handled) {
+      if (!handled && !fileSeen) {
         fail(AppException.badRequest(ErrorKeys.IMPORT_NO_FILE));
       }
     });
