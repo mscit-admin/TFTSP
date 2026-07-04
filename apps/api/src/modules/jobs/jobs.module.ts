@@ -1,19 +1,24 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ImportsModule } from '../imports/imports.module';
+import { IMPORT_QUEUE } from '../imports/import.constants';
 import { ChangeRequestMaintenanceModule } from './change-request-maintenance.module';
 import { ChangeRequestMaintenanceProcessor } from './change-request-maintenance.processor';
 import { ChangeRequestScheduler } from './change-request-scheduler.service';
+import { ImportDispatcherBridge } from './import-dispatcher.bridge';
+import { ImportParseProcessor } from './import-parse.processor';
 import { CR_MAINTENANCE_QUEUE } from './jobs.constants';
 
 /**
- * BullMQ scheduler + worker for change-request maintenance. Requires Redis, so
- * it is only imported when the scheduler is enabled (see AppModule). Tests invoke
- * ChangeRequestMaintenanceService directly and skip this module.
+ * BullMQ scheduler + workers (change-request maintenance + bulk-import parse).
+ * Requires Redis, so it is only imported when the scheduler is enabled (see
+ * AppModule). Tests invoke the underlying services directly and skip this module.
  */
 @Module({
   imports: [
     ChangeRequestMaintenanceModule,
+    ImportsModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,8 +29,13 @@ import { CR_MAINTENANCE_QUEUE } from './jobs.constants';
         },
       }),
     }),
-    BullModule.registerQueue({ name: CR_MAINTENANCE_QUEUE }),
+    BullModule.registerQueue({ name: CR_MAINTENANCE_QUEUE }, { name: IMPORT_QUEUE }),
   ],
-  providers: [ChangeRequestMaintenanceProcessor, ChangeRequestScheduler],
+  providers: [
+    ChangeRequestMaintenanceProcessor,
+    ChangeRequestScheduler,
+    ImportParseProcessor,
+    ImportDispatcherBridge,
+  ],
 })
 export class JobsModule {}

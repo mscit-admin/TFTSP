@@ -18,6 +18,39 @@ export class LineageRepository {
     `;
   }
 
+  /**
+   * Rebuild the entire paternal closure for one tenant from live persons
+   * (Spec §5 / §12 rollback). Wipes and re-derives via a recursive father walk.
+   * Run inside a tenant transaction (RLS-scoped).
+   */
+  async rebuildForTenant(tx: TenantTransactionClient, tenantId: string): Promise<void> {
+    await tx.$executeRaw`DELETE FROM person_closures WHERE tenant_id = ${tenantId}::uuid`;
+    // self rows for every live person
+    await tx.$executeRaw`
+      INSERT INTO person_closures (tenant_id, ancestor_id, descendant_id, depth)
+      SELECT ${tenantId}::uuid, id, id, 0
+      FROM persons
+      WHERE tenant_id = ${tenantId}::uuid AND deleted_at IS NULL
+    `;
+    // ancestor rows via recursive father chain
+    await tx.$executeRaw`
+      WITH RECURSIVE anc AS (
+        SELECT p.id AS descendant_id, p.father_id AS ancestor_id, 1 AS depth
+        FROM persons p
+        WHERE p.tenant_id = ${tenantId}::uuid AND p.deleted_at IS NULL AND p.father_id IS NOT NULL
+        UNION ALL
+        SELECT a.descendant_id, parent.father_id, a.depth + 1
+        FROM anc a
+        JOIN persons parent ON parent.id = a.ancestor_id AND parent.deleted_at IS NULL
+        WHERE parent.father_id IS NOT NULL
+      )
+      INSERT INTO person_closures (tenant_id, ancestor_id, descendant_id, depth)
+      SELECT ${tenantId}::uuid, a.ancestor_id, a.descendant_id, a.depth
+      FROM anc a
+      JOIN persons anc_p ON anc_p.id = a.ancestor_id AND anc_p.deleted_at IS NULL
+    `;
+  }
+
   /** True if candidateAncestorId is already a descendant of personId (would create a cycle). */
   async wouldCreateCycle(
     tx: TenantTransactionClient,

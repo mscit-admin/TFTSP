@@ -44,6 +44,17 @@ upload (stream → MinIO) → parse + per-row validation → import_rows (valid|
 - Namespace `/imports` (JWT-authed, tenant+user room like `/notifications`). Event `import_progress`,
   payload `ImportProgressEvent` `{ importBatchId, status, progress(0..100), counts? }`, emitted during
   parse / validate / resolve / publish.
+- **Handshake:** `io('<baseHost>/imports', { auth: { token: <accessJWT> } })` (also accepts
+  `Authorization: Bearer` / `?token=`). No active tenant ⇒ disconnect. Room = `t:<tenantId>:u:<userId>`.
+
+## Notes for Admin-Web
+- **Upload:** `POST /imports` is `multipart/form-data`, file field name **`file`** (xlsx or .csv, ≤ 50 MB).
+  Response is the `ImportBatch` (`status: uploaded`); parsing runs async — poll `GET /imports/:id` or watch
+  the socket until `status: preview`.
+- **Preview row shape:** `ImportRow` (see shared-types) — `status`, `errors[] {column,messageKey}`,
+  `duplicateOfId`/`similarity`, `resolved{Father,Mother,Spouse}Id`, `decision`, `mergeTargetId`.
+- **Plan-limit error:** `errors.import.plan_limit_exceeded` with `details {current,max,available,requested}`.
+- **Rollback blocked:** `errors.import.rollback_blocked` with `details {dependentChildren[],unions[]}`.
 
 ## Rollback (Spec §12)
 - **Batch-level only** (no single rows), Tribe Admin.

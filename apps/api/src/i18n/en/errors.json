@@ -43,6 +43,30 @@
     "invalid_patch": "The JSON patch is malformed.",
     "already_reviewed": "You have already reviewed this request."
   },
+  "import": {
+    "not_found": "Import batch not found.",
+    "row_not_found": "Import row not found.",
+    "invalid_state": "This action is not allowed in the batch's current state.",
+    "unsupported_format": "Unsupported file type. Only xlsx and CSV are accepted.",
+    "file_too_large": "The file exceeds the 50 MB limit.",
+    "no_file": "No file was uploaded.",
+    "plan_limit_exceeded": "This import would exceed your plan's person limit.",
+    "has_errors": "The batch still has error rows. Fix them or submit a partial import.",
+    "rollback_blocked": "Rollback is blocked: later records depend on this batch.",
+    "nothing_to_import": "There are no rows to import.",
+    "row": {
+      "row_ref_required": "rowRef is required.",
+      "full_name_required": "Full name is required.",
+      "invalid_gender": "Gender must be male or female.",
+      "invalid_date": "Invalid date.",
+      "father_not_found": "Referenced father could not be resolved.",
+      "mother_not_found": "Referenced mother could not be resolved.",
+      "father_must_be_male": "The referenced father is not male.",
+      "mother_must_be_female": "The referenced mother is not female.",
+      "cycle": "This row would create an ancestry cycle.",
+      "ambiguous_ref": "The reference matches more than one person; pick one."
+    }
+  },
   "validation": {
     "failed": "Validation failed."
   },

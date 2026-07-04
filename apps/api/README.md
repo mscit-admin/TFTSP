@@ -70,8 +70,19 @@ Key tests:
 | Notifications | `modules/notifications` — persistent entity + list/read/read-all; Socket.IO gateway `/notifications` (JWT handshake, room `t:<tenant>:u:<user>`, event `notification`); `NotificationChannel` abstraction with in-app + bilingual MJML email (MailHog). |
 | Scheduled jobs | `modules/jobs` — BullMQ expiry sweep (hourly) + expiring-soon warning (daily). Redis-free `ChangeRequestMaintenanceService` holds the logic; scheduler gated by `ENABLE_SCHEDULER`. |
 
+## Architecture (M2.5 — Bulk Import)
+
+| Concern | Where |
+|---|---|
+| Upload | `modules/imports/import.controller.ts` (`POST /imports`, multipart field `file`) → `parsing/upload.util.ts` streams to MinIO (busboy, magic-byte + 50 MB). Template: `GET /imports/template`. |
+| Staging + parse | `import-parse.service.ts` (Redis-free): exceljs/csv-parse streaming → per-row validation → two-pass ref resolution → §8 duplicate check → whole-batch cycle detection → `import_rows`. Worker: `modules/jobs/import-parse.processor.ts`. |
+| Preview | `GET /imports/:id`, `GET /imports/:id/rows?status=`, `PATCH /imports/:id/rows/:rowId` (decision / merge target / resolve ambiguous). |
+| Submit + publish | `import.service.ts` (plan-limit guard) → ONE M2 change request; `import-apply.service.ts` applies on approval (1,000/tx, in-file parents first, `import_batch_id` tags, merges via M2 JSON-Patch). |
+| Rollback | `POST /imports/:id/rollback` — refused if later records depend; else soft-delete + `LineageService.rebuildClosure` + audit `import_rollback`. |
+| Progress WS | `import.gateway.ts` — namespace `/imports`, event `import_progress`. |
+
 Architecture decisions specific to the backend are logged in the repo-root
-`DECISIONS.md` (D-101 … D-207).
+`DECISIONS.md` (D-101 … D-307).
 
 ## Module conventions
 

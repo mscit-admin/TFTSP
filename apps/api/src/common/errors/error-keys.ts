@@ -47,6 +47,18 @@ export const ErrorKeys = {
   CR_INVALID_PATCH: 'errors.change_request.invalid_patch',
   CR_ALREADY_REVIEWED: 'errors.change_request.already_reviewed',
 
+  // bulk import (M2.5)
+  IMPORT_NOT_FOUND: 'errors.import.not_found',
+  IMPORT_ROW_NOT_FOUND: 'errors.import.row_not_found',
+  IMPORT_INVALID_STATE: 'errors.import.invalid_state',
+  IMPORT_UNSUPPORTED_FORMAT: 'errors.import.unsupported_format',
+  IMPORT_FILE_TOO_LARGE: 'errors.import.file_too_large',
+  IMPORT_NO_FILE: 'errors.import.no_file',
+  IMPORT_PLAN_LIMIT_EXCEEDED: 'errors.import.plan_limit_exceeded',
+  IMPORT_HAS_ERRORS: 'errors.import.has_errors',
+  IMPORT_ROLLBACK_BLOCKED: 'errors.import.rollback_blocked',
+  IMPORT_NOTHING_TO_IMPORT: 'errors.import.nothing_to_import',
+
   // generic
   VALIDATION_FAILED: 'errors.validation.failed',
   NOT_FOUND: 'errors.generic.not_found',

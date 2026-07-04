@@ -65,6 +65,7 @@ enum ChangeTargetType {
   person
   union
   tribal_unit
+  import_batch // M2.5 — a bulk-import batch submitted as one change request
 }
 
 enum ChangeOperation {
@@ -102,6 +103,39 @@ enum NotificationType {
   change_request_conflict
 }
 
+// ---- M2.5: Bulk Import ----
+
+enum ImportFileFormat {
+  xlsx
+  csv
+}
+
+enum ImportBatchStatus {
+  uploaded
+  parsing
+  validating
+  resolving
+  preview
+  submitted
+  published
+  rejected
+  rolled_back
+  failed
+}
+
+enum ImportRowStatus {
+  valid
+  error
+  duplicate_candidate
+  ambiguous
+}
+
+enum ImportRowDecision {
+  new
+  merge
+  ignore
+}
+
 // ---------------------------------------------------------------------------
 // Platform-level tables (OUTSIDE RLS) — Spec Section 4.4
 // ---------------------------------------------------------------------------
@@ -114,6 +148,8 @@ model Tenant {
   status       TenantStatus @default(active)
   logoKey      String?      @map("logo_key")
   primaryColor String?      @map("primary_color")
+  // M2.5 plan-limit stand-in (Free = 500). Real subscription mgmt is M4. See D-301.
+  maxPersons   Int          @default(500) @map("max_persons")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
@@ -125,6 +161,7 @@ model Tenant {
   changeRequests   ChangeRequest[]
   notifications    Notification[]
   workflowSettings WorkflowSettings?
+  importBatches    ImportBatch[]
 
   @@map("tenants")
 }
@@ -240,6 +277,8 @@ model Person {
   status          PersonStatus @default(published)
   version         Int          @default(1)
   createdBy       String       @map("created_by") @db.Uuid
+  // M2.5: tags records created/merged by a bulk-import batch (traceability + rollback).
+  importBatchId   String?      @map("import_batch_id") @db.Uuid
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
   deletedAt       DateTime?    @map("deleted_at")
@@ -266,6 +305,7 @@ model Person {
   @@index([tenantId, motherId])
   @@index([tenantId, tribalUnitId])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, importBatchId])
   @@map("persons")
 }
 
@@ -401,4 +441,57 @@ model Notification {
   @@index([tenantId, userId, readAt])
   @@index([tenantId, userId, createdAt])
   @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// M2.5 tenant-scoped staging tables (UNDER RLS) — Spec §12
+// ---------------------------------------------------------------------------
+
+model ImportBatch {
+  id              String            @id @default(uuid()) @db.Uuid
+  tenantId        String            @map("tenant_id") @db.Uuid
+  filename        String
+  fileKey         String            @map("file_key") // MinIO object key
+  format          ImportFileFormat
+  status          ImportBatchStatus @default(uploaded)
+  progress        Int               @default(0)
+  counts          Json              @default("{}")
+  changeRequestId String?           @map("change_request_id") @db.Uuid
+  error           String?
+  createdBy       String            @map("created_by") @db.Uuid
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rows   ImportRow[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdBy])
+  @@map("import_batches")
+}
+
+model ImportRow {
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @map("tenant_id") @db.Uuid
+  importBatchId    String            @map("import_batch_id") @db.Uuid
+  rowRef           String            @map("row_ref")
+  rowNumber        Int               @map("row_number")
+  raw              Json
+  status           ImportRowStatus   @default(valid)
+  errors           Json              @default("[]")
+  resolvedFatherId String?           @map("resolved_father_id") @db.Uuid
+  resolvedMotherId String?           @map("resolved_mother_id") @db.Uuid
+  resolvedSpouseId String?           @map("resolved_spouse_id") @db.Uuid
+  duplicateOfId    String?           @map("duplicate_of_id") @db.Uuid
+  similarity       Float?
+  decision         ImportRowDecision @default(new)
+  mergeTargetId    String?           @map("merge_target_id") @db.Uuid
+  createdPersonId  String?           @map("created_person_id") @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at")
+
+  batch ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, importBatchId, status])
+  @@index([importBatchId, rowRef])
+  @@map("import_rows")
 }

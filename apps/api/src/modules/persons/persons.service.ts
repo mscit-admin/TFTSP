@@ -84,6 +84,7 @@ export class PersonsService {
     tx: TenantTransactionClient,
     dto: CreatePersonDto,
     createdByOverride?: string,
+    importBatchId?: string,
   ): Promise<Person> {
     const tenantId = this.tenantContext.requireTenantId();
     const fullName = buildFullName(dto);
@@ -115,6 +116,7 @@ export class PersonsService {
       tribalUnitId: dto.tribalUnitId ?? null,
       profession: dto.profession ?? null,
       createdBy: createdByOverride ?? this.tenantContext.userId ?? tenantId,
+      importBatchId: importBatchId ?? null,
     });
 
     await this.lineage.onCreate(tx, person.id, person.fatherId);
