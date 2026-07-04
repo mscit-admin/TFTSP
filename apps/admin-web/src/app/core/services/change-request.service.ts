@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import type {
   ChangeRequest,
   ChangeRequestStatus,
   CreateChangeRequestDto,
+  Paginated,
   ReviewChangeRequestDto,
   UpdateChangeRequestDto,
 } from '../models';
@@ -18,9 +20,9 @@ export interface ChangeRequestQuery {
 }
 
 /**
- * Typed data service for /change-requests (M2). Contract assumption (D-208): the list
- * endpoint returns a plain `ChangeRequest[]` (the spec says "list" without a pagination
- * envelope, unlike /persons and /notifications).
+ * Typed data service for /change-requests (M2). The list endpoint returns the standard
+ * `{ data, page, pageSize, total }` envelope (reconciled with the backend); we unwrap `data`
+ * so callers keep working with a plain `ChangeRequest[]`.
  */
 @Injectable({ providedIn: 'root' })
 export class ChangeRequestService {
@@ -32,7 +34,9 @@ export class ChangeRequestService {
       mine: query.mine ? true : undefined,
       queue: query.queue ? true : undefined,
     };
-    return this.api.get<ChangeRequest[]>('/change-requests', params);
+    return this.api
+      .get<Paginated<ChangeRequest>>('/change-requests', params)
+      .pipe(map((res) => res.data));
   }
 
   get(id: string): Observable<ChangeRequest> {
