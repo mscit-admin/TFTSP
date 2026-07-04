@@ -1,0 +1,157 @@
+{
+  "app": {
+    "title": "Tribe Admin"
+  },
+  "common": {
+    "loading": "Loading…"
+  },
+  "nav": {
+    "menu": "Menu",
+    "persons": "Persons",
+    "tribalUnits": "Tribal Units",
+    "tree": "Family Tree",
+    "settings": "Tribe Settings",
+    "switchLanguage": "Switch language",
+    "logout": "Log out",
+    "readOnlyNotice": "You have read-only access. Editing requires an administrative role."
+  },
+  "auth": {
+    "loginSubtitle": "Sign in to manage your tribe's data.",
+    "email": "Email",
+    "password": "Password",
+    "login": "Log in"
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back"
+  },
+  "persons": {
+    "title": "Persons",
+    "new": "Add person",
+    "newTitle": "New person",
+    "editTitle": "Edit person",
+    "searchPlaceholder": "Search by name…",
+    "empty": "No persons found.",
+    "saved": "Person saved.",
+    "deleted": "Person deleted.",
+    "deleteConfirm": "Delete this person? This is a soft-delete and can be reversed by an admin.",
+    "versionConflict": "This record was modified by someone else. Reload and try again.",
+    "fields": {
+      "fullName": "Full name",
+      "firstName": "First name",
+      "fatherName": "Father's name",
+      "grandfatherName": "Grandfather's name",
+      "familyName": "Family name",
+      "laqab": "Laqab (title)",
+      "gender": "Gender",
+      "birthDate": "Birth date",
+      "birthPlace": "Birth place",
+      "isDeceased": "Deceased",
+      "deathDate": "Death date",
+      "deathPlace": "Death place",
+      "father": "Father",
+      "mother": "Mother",
+      "tribalUnit": "Tribal unit",
+      "profession": "Profession",
+      "status": "Status"
+    },
+    "hints": {
+      "partialDate": "Year-only is allowed (e.g. 1965 or 1965-03-12)."
+    },
+    "genderValue": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "statusValue": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "duplicates": {
+      "title": "Similar persons already exist",
+      "body": "The following persons look similar. Confirm you still want to create a new record.",
+      "similarity": "Similarity",
+      "confirmCreate": "Create anyway"
+    }
+  },
+  "tribalUnits": {
+    "title": "Tribal Units",
+    "addRoot": "Add tribe",
+    "addChild": "Add child unit",
+    "newTitle": "New unit",
+    "editTitle": "Edit unit",
+    "empty": "No tribal units yet.",
+    "saved": "Unit saved.",
+    "deleted": "Unit deleted.",
+    "deleteConfirm": "Delete this unit and detach its children?",
+    "type": {
+      "tribe": "Tribe",
+      "branch": "Branch",
+      "clan": "Clan",
+      "family": "Family"
+    },
+    "fields": {
+      "type": "Type",
+      "nameAr": "Name (Arabic)",
+      "nameEn": "Name (English)"
+    }
+  },
+  "settings": {
+    "title": "Tribe Settings",
+    "saved": "Settings saved.",
+    "logoStaged": "Logo staged for upload.",
+    "fields": {
+      "nameAr": "Tribe name (Arabic)",
+      "nameEn": "Tribe name (English)",
+      "logo": "Logo",
+      "logoKey": "Logo key",
+      "primaryColor": "Primary color",
+      "secondaryColor": "Secondary color"
+    },
+    "hints": {
+      "logoStub": "PNG or JPEG. Upload is finalized in a later milestone."
+    }
+  },
+  "tree": {
+    "title": "Family Tree",
+    "reload": "Reload",
+    "empty": "No tree data available.",
+    "m1Notice": "Basic tree preview. The interactive high-detail renderer arrives in a later milestone."
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "auth": {
+      "loginFailed": "Login failed. Check your credentials.",
+      "invalidCredentials": "Invalid email or password.",
+      "accountLocked": "Account locked after too many attempts. Try again in 15 minutes."
+    },
+    "person": {
+      "duplicateCandidates": "Similar persons already exist.",
+      "versionConflict": "This record was modified by someone else."
+    }
+  },
+  "primeng": {
+    "accept": "Yes",
+    "reject": "No",
+    "clear": "Clear",
+    "apply": "Apply",
+    "emptyMessage": "No results found",
+    "emptyFilterMessage": "No results found",
+    "choose": "Choose",
+    "upload": "Upload",
+    "cancel": "Cancel",
+    "dayNames": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "dayNamesShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "dayNamesMin": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    "monthNames": [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ],
+    "monthNamesShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "today": "Today",
+    "weekHeader": "Wk"
+  }
+}

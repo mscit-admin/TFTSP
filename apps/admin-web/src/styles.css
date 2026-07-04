@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Global app chrome ---- */
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family:
+    'Segoe UI', Tahoma, 'Noto Sans Arabic', 'Cairo', system-ui, -apple-system,
+    sans-serif;
+  background: var(--surface-ground, #f5f6f8);
+  color: var(--text-color, #1f2937);
+}
+
+/* Arabic gets a slightly larger line-height for readability. */
+:root[dir='rtl'] body {
+  line-height: 1.7;
+}
+
+/* Utility: elements that must always follow reading direction. */
+.dir-flip {
+  transition: none;
+}
