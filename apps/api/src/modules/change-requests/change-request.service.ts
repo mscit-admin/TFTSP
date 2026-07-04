@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   ChangeOperation,
   ChangeRequest,
@@ -8,6 +8,8 @@ import {
   Prisma,
   ReviewDecision,
 } from '@prisma/client';
+import { IMPORT_BATCH_APPLIER } from '../imports/import.constants';
+import type { ImportBatchApplier } from '../imports/import-apply.service';
 import { AppException } from '../../common/errors/app.exception';
 import { ErrorKeys } from '../../common/errors/error-keys';
 import { AuthenticatedUser } from '../../common/auth/authenticated-user';
@@ -41,6 +43,10 @@ export class ChangeRequestService {
     private readonly audit: AuditService,
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    // M2.5: optional so the M2 module stays independent of the imports module.
+    @Optional()
+    @Inject(IMPORT_BATCH_APPLIER)
+    private readonly importApplier?: ImportBatchApplier,
   ) {}
 
   async create(dto: CreateChangeRequestDto, user: AuthenticatedUser): Promise<ChangeRequest> {
@@ -233,12 +239,40 @@ export class ChangeRequestService {
     notifyType: NotificationType,
   ): Promise<ChangeRequest> {
     const updated = await this.repo.updateStatus(cr.id, { status });
+    // Keep an import batch's status in sync when its CR is rejected (M2.5).
+    if (
+      status === ChangeRequestStatus.rejected &&
+      cr.targetType === ChangeTargetType.import_batch &&
+      this.importApplier
+    ) {
+      await this.importApplier.onBatchRejected(cr);
+    }
     await this.notifyOwner(cr, notifyType);
     return updated;
   }
 
   /** Auto-publish: atomic apply + conflict re-check, then notify the owner. */
   private async publish(cr: ChangeRequestWithReviews): Promise<ChangeRequest> {
+    // M2.5: a bulk-import batch is applied in its own chunked transactions
+    // (1,000 rows/tx) by the import module — not the single-tx generic path.
+    if (cr.targetType === ChangeTargetType.import_batch && this.importApplier) {
+      await this.importApplier.publishBatch(cr);
+      const updated = await this.repo.updateStatus(cr.id, {
+        status: ChangeRequestStatus.published,
+        publishedAt: new Date(),
+      });
+      await this.notifyOwner(cr, NotificationType.change_request_approved);
+      await this.notifyOwner(cr, NotificationType.change_request_published);
+      await this.audit.record({
+        action: 'changeRequest.published',
+        entityType: 'ChangeRequest',
+        entityId: cr.id,
+        before: cr,
+        after: updated,
+      });
+      return updated;
+    }
+
     const { updated, outcome } = await this.prisma.tenantTransaction(async (tx) => {
       const result = await this.publisher.apply(tx, cr);
       const next =

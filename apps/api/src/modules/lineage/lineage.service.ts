@@ -67,6 +67,12 @@ export class LineageService {
     await this.repo.moveSubtree(tx, tenantId, personId, newFatherId);
   }
 
+  /** Rebuild the whole tenant closure (Spec §12 rollback). Own tenant transaction. */
+  async rebuildClosure(): Promise<void> {
+    const tenantId = this.tenantContext.requireTenantId();
+    await this.prisma.tenantTransaction((tx) => this.repo.rebuildForTenant(tx, tenantId));
+  }
+
   /** Detach a soft-deleted person: its children become roots; its rows are dropped. */
   async onSoftDelete(tx: TenantTransactionClient, personId: string): Promise<void> {
     const tenantId = this.tenantContext.requireTenantId();

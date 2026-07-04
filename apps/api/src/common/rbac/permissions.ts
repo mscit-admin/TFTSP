@@ -23,7 +23,10 @@ export type Permission =
   | 'changeRequest.review'
   | 'workflowSettings.read'
   | 'workflowSettings.update'
-  | 'notification.read';
+  | 'notification.read'
+  | 'import.read'
+  | 'import.create'
+  | 'import.rollback';
 
 /** Reviewer/approver roles (Spec §3 M2). */
 export const M2_REVIEW_ROLES: Role[] = [Role.tribe_admin, Role.deputy_admin, Role.reviewer];
@@ -67,6 +70,10 @@ export const PERMISSION_MATRIX: Record<Permission, Role[]> = {
   'workflowSettings.read': [Role.tribe_admin, Role.deputy_admin],
   'workflowSettings.update': [Role.tribe_admin, Role.deputy_admin],
   'notification.read': READ_ROLES,
+  // Bulk import (M2.5): admins upload/preview/submit; rollback is Tribe/Deputy Admin.
+  'import.read': [Role.tribe_admin, Role.deputy_admin, Role.branch_admin],
+  'import.create': [Role.tribe_admin, Role.deputy_admin, Role.branch_admin],
+  'import.rollback': [Role.tribe_admin, Role.deputy_admin],
 };
 
 /**

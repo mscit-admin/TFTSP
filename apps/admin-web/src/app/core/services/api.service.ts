@@ -34,6 +34,14 @@ export class ApiService {
     return this.http.get<T>(this.url(path), { params: this.toParams(params), context });
   }
 
+  /** Binary download (e.g. the import template). Bearer token is attached by the interceptor. */
+  getBlob(path: string, params?: QueryParams): Observable<Blob> {
+    return this.http.get(this.url(path), {
+      params: this.toParams(params),
+      responseType: 'blob',
+    });
+  }
+
   post<T>(path: string, body?: unknown, context?: HttpContext): Observable<T> {
     return this.http.post<T>(this.url(path), body ?? {}, { context });
   }

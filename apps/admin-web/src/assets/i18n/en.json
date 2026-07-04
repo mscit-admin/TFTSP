@@ -13,6 +13,7 @@
     "settings": "Tribe Settings",
     "reviewQueue": "Review Queue",
     "myRequests": "My Requests",
+    "imports": "Bulk Import",
     "workflow": "Workflow Settings",
     "switchLanguage": "Switch language",
     "logout": "Log out",
@@ -240,6 +241,114 @@
       "change_request_expiring": "A change request is about to expire.",
       "change_request_expired": "A change request has expired.",
       "change_request_conflict": "Your change request has a conflict and was not applied."
+    }
+  },
+  "imports": {
+    "title": "Bulk Import",
+    "new": "New import",
+    "empty": "No import batches yet.",
+    "wizardTitle": "Import persons",
+    "allBatches": "All batches",
+    "detailTitle": "Import batch",
+    "notFound": "Import batch not found.",
+    "format": "File format",
+    "templateTitle": "Download the official template",
+    "templateHint": "Fill in the bilingual template. Use the rowRef column to reference parents/spouses inside the same file (e.g. ref:15).",
+    "downloadXlsx": "Template (XLSX)",
+    "downloadCsv": "Template (CSV)",
+    "uploadTitle": "Upload your file",
+    "sizeHint": "xlsx or CSV, up to 50 MB.",
+    "tooLarge": "File exceeds the 50 MB limit.",
+    "startUpload": "Upload & process",
+    "processingHint": "Parsing, validating and resolving references. This runs in the background — you can watch the progress here.",
+    "processingFailed": "Processing failed. Please check the file and try again.",
+    "openRequest": "Open the change request",
+    "steps": {
+      "choose": "Choose file",
+      "processing": "Processing",
+      "preview": "Preview",
+      "done": "Submitted"
+    },
+    "status": {
+      "uploaded": "Uploaded",
+      "parsing": "Parsing",
+      "validating": "Validating",
+      "resolving": "Resolving references",
+      "preview": "Ready for review",
+      "submitted": "Submitted for approval",
+      "published": "Published",
+      "rejected": "Rejected",
+      "rolled_back": "Rolled back",
+      "failed": "Failed"
+    },
+    "counts": {
+      "total": "Total",
+      "valid": "Valid",
+      "error": "Errors",
+      "duplicateCandidate": "Duplicates",
+      "ambiguous": "Ambiguous",
+      "ignored": "Ignored",
+      "created": "Created",
+      "merged": "Merged"
+    },
+    "fields": {
+      "filename": "File",
+      "status": "Status",
+      "created": "Created"
+    },
+    "columns": {
+      "rowRef": "Row ref",
+      "fullName": "Full name",
+      "gender": "Gender",
+      "fatherRef": "Father (ref/name)",
+      "motherRef": "Mother (ref/name)",
+      "birthDate": "Birth date",
+      "deathDate": "Death date",
+      "branch": "Branch",
+      "clan": "Clan",
+      "family": "Family",
+      "spouseRef": "Spouse (ref/name)",
+      "laqab": "Laqab",
+      "profession": "Profession",
+      "phone": "Phone",
+      "notes": "Notes"
+    },
+    "decision": {
+      "new": "Create new",
+      "merge": "Merge",
+      "ignore": "Ignore"
+    },
+    "preview": {
+      "errorsTitle": "Validation errors",
+      "row": "Row",
+      "column": "Column",
+      "message": "Message",
+      "duplicatesTitle": "Possible duplicates",
+      "name": "Name",
+      "similarity": "Match",
+      "decision": "Decision",
+      "mergeTarget": "Merge into",
+      "pickTarget": "Choose the existing person…",
+      "ambiguousTitle": "Ambiguous references",
+      "pickPerson": "Pick a person…",
+      "workflowNote": "Submitting sends the whole batch to the approval workflow as a single change request. Nothing touches the live tree until it is approved and published.",
+      "partialLabel": "Import only valid rows and skip the rows with errors",
+      "errorsBlock": "There are rows with errors. Tick the option above to import only the valid rows, or fix the file and re-upload.",
+      "submit": "Submit for approval",
+      "submittedToast": "Batch submitted for approval."
+    },
+    "done": {
+      "title": "Batch submitted",
+      "body": "The batch was submitted as a single change request into the approval workflow. Once approved it is published to the tree.",
+      "openRequest": "Open the change request"
+    },
+    "rollback": {
+      "title": "Roll back this batch",
+      "body": "Soft-deletes every record created or merged by this batch and rebuilds the closure table. Refused if later records depend on this batch.",
+      "action": "Roll back batch",
+      "confirm": "Roll back this entire batch? This cannot be undone from the UI.",
+      "done": "Batch rolled back.",
+      "refused": "Rollback refused: other records depend on this batch."
     }
   },
   "errors": {

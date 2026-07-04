@@ -11,6 +11,8 @@ import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers
 import { PrismaClient } from '@prisma/client';
 import { AppModule } from '../../src/app.module';
 import { AllExceptionsFilter } from '../../src/common/errors/all-exceptions.filter';
+import { MinioService } from '../../src/common/minio/minio.service';
+import { InMemoryMinio } from './in-memory-minio';
 
 export interface TestContext {
   app: INestApplication;
@@ -49,7 +51,11 @@ export async function bootstrapTestApp(): Promise<TestContext> {
   process.env.ENABLE_SCHEDULER = 'false';
   process.env.SMTP_HOST = process.env.SMTP_HOST ?? '127.0.0.1';
 
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    // Import (M2.5) uses object storage; swap in an in-memory MinIO for e2e.
+    .overrideProvider(MinioService)
+    .useClass(InMemoryMinio)
+    .compile();
   const app = moduleRef.createNestApplication();
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(

@@ -26,6 +26,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { WorkflowSettingsModule } from './modules/workflow-settings/workflow-settings.module';
 import { ChangeRequestMaintenanceModule } from './modules/jobs/change-request-maintenance.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+// M2.5
+import { MinioModule } from './common/minio/minio.module';
+import { ImportsModule } from './modules/imports/imports.module';
 
 // BullMQ scheduler needs Redis; disable in tests/CI-without-redis via ENABLE_SCHEDULER=false.
 const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
@@ -76,6 +79,9 @@ const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
     NotificationsModule,
     ChangeRequestsModule,
     ChangeRequestMaintenanceModule,
+    // M2.5
+    MinioModule,
+    ImportsModule,
     ...(schedulerEnabled ? [JobsModule] : []),
   ],
   providers: [
