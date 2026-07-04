@@ -27,7 +27,7 @@
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/platform/tenants` | list tribes (+ counts) |
-| POST | `/platform/tenants` | create tribe + assign first Tribe Admin `{ name_ar, name_en, slug, admin: { email, fullName, password } }` |
+| POST | `/platform/tenants` | create tribe + assign first Tribe Admin `{ nameAr, nameEn, slug, admin: { email, fullName, password } }` (camelCase, matches `packages/shared-types` `CreateTenantDto`) |
 | POST | `/platform/tenants/:id/suspend` | suspend tribe |
 | POST | `/platform/tenants/:id/activate` | reactivate |
 | GET | `/platform/stats` | `{ tribes, persons, users }` |
