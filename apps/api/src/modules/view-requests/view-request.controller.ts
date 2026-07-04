@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Req } from '@nestjs/common';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthenticatedUser } from '../../common/auth/authenticated-user';
@@ -15,6 +16,17 @@ import {
 @Controller('view-requests')
 export class ViewRequestController {
   constructor(private readonly service: ViewRequestService) {}
+
+  @Public()
+  @Post('id-attachment')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary:
+      'PUBLIC — upload an ID attachment (field "file", + tenantSlug). Images/PDF only, SVG rejected, 10 MB. Returns { idAttachmentKey }.',
+  })
+  uploadIdAttachment(@Req() req: Request) {
+    return this.service.uploadIdAttachment(req);
+  }
 
   @Public()
   @Post()

@@ -36,7 +36,8 @@ role assignment (falling back to `defaultMemberScope`). Resolved via the Closure
 Non-members request temporary view access; approval grants a **Viewer role with a mandatory expiry**.
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | `/view-requests` | **public** (tenant via `tenantSlug`) | submit `CreateViewRequestDto` (triple name, phone, alleged branch, reason, optional ID attachment per `requireIdForViewRequest`) → notifies admins |
+| POST | `/view-requests/id-attachment` | **public** | `multipart/form-data`, file field **`file`** + a `tenantSlug` field → streams to MinIO; returns `{ idAttachmentKey }`. Images (PNG/JPEG/WEBP/GIF) + PDF only, **magic-byte** checked, **SVG rejected outright**, ≤ 10 MB. Use the returned key as `idAttachmentKey` in the submission below. |
+| POST | `/view-requests` | **public** (tenant via `tenantSlug`) | submit `CreateViewRequestDto` (triple name, phone, alleged branch, reason, optional `idAttachmentKey` per `requireIdForViewRequest`) → notifies admins |
 | GET | `/view-requests?status=` | Tribe Admin | list requests |
 | POST | `/view-requests/:id/approve` | Tribe Admin | `ApproveViewRequestDto { validTo }` — creates/links a Viewer user + a `role_assignments` row with `valid_to` |
 | POST | `/view-requests/:id/reject` | Tribe Admin | reject |

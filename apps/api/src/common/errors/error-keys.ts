@@ -65,6 +65,11 @@ export const ErrorKeys = {
   VIEW_REQUEST_INVALID_STATE: 'errors.view_request.invalid_state',
   VIEW_REQUEST_ID_REQUIRED: 'errors.view_request.id_required',
   VIEW_REQUEST_VALID_TO_REQUIRED: 'errors.view_request.valid_to_required',
+  VIEW_REQUEST_TENANT_SLUG_REQUIRED: 'errors.view_request.tenant_slug_required',
+  UPLOAD_NO_FILE: 'errors.upload.no_file',
+  UPLOAD_FILE_TOO_LARGE: 'errors.upload.file_too_large',
+  UPLOAD_UNSUPPORTED_TYPE: 'errors.upload.unsupported_type',
+  UPLOAD_SVG_REJECTED: 'errors.upload.svg_rejected',
 
   // generic
   VALIDATION_FAILED: 'errors.validation.failed',

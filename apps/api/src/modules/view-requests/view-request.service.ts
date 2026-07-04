@@ -1,13 +1,16 @@
 import { randomBytes } from 'node:crypto';
+import type { Request } from 'express';
 import { Injectable } from '@nestjs/common';
 import { NotificationType, ViewRequest, ViewRequestStatus } from '@prisma/client';
 import { AppException } from '../../common/errors/app.exception';
 import { ErrorKeys } from '../../common/errors/error-keys';
 import { AuthenticatedUser } from '../../common/auth/authenticated-user';
+import { MinioService } from '../../common/minio/minio.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationService } from '../notifications/notification.service';
 import { PasswordService } from '../auth/password.service';
 import { ViewRequestRepository } from './view-request.repository';
+import { streamIdAttachmentToMinio } from './id-upload.util';
 import {
   ApproveViewRequestDto,
   CreateViewRequestDto,
@@ -21,7 +24,22 @@ export class ViewRequestService {
     private readonly notifications: NotificationService,
     private readonly passwords: PasswordService,
     private readonly audit: AuditService,
+    private readonly minio: MinioService,
   ) {}
+
+  /**
+   * PUBLIC — stream a non-member's ID attachment to MinIO and return its key.
+   * Magic-byte gate (images + PDF), SVG rejected, 10 MB cap. A `tenantSlug`
+   * form field is required to scope the object key.
+   */
+  async uploadIdAttachment(req: Request): Promise<{ idAttachmentKey: string }> {
+    const { idAttachmentKey, tenantSlug } = await streamIdAttachmentToMinio(req, this.minio);
+    if (!tenantSlug) {
+      await this.minio.remove(idAttachmentKey).catch(() => undefined);
+      throw AppException.badRequest(ErrorKeys.VIEW_REQUEST_TENANT_SLUG_REQUIRED);
+    }
+    return { idAttachmentKey };
+  }
 
   /** PUBLIC — no auth; tenant resolved from slug. */
   async create(dto: CreateViewRequestDto): Promise<ViewRequest> {

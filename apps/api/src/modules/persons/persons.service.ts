@@ -48,30 +48,36 @@ export class PersonsService {
     const skip = (dto.page - 1) * dto.pageSize;
     const ctx = await this.visibility.buildContext();
 
+    // Fetch the raw page (full Person rows — the resolver needs gender/etc.),
+    // identically for search and plain list; the ONLY return point below applies
+    // the Visibility Resolver so no branch can ever skip it (Spec §3·M3.1).
+    let raw: Person[];
+    let total: number;
+
     if (dto.q && dto.q.trim().length > 0) {
-      const [idRows, total] = await Promise.all([
-        this.repo.searchIds(dto.q.trim(), skip, dto.pageSize),
-        this.repo.countSearch(dto.q.trim()),
+      const q = dto.q.trim();
+      const [idRows, count] = await Promise.all([
+        this.repo.searchIds(q, skip, dto.pageSize),
+        this.repo.countSearch(q),
       ]);
       const persons = await this.repo.loadByIds(idRows.map((r) => r.id));
       const byId = new Map(persons.map((p) => [p.id, p]));
-      const ordered = idRows.map((r) => byId.get(r.id)).filter((p): p is Person => p !== undefined);
-      // EVERY read passes the Visibility Resolver (Spec §3·M3.1).
-      return {
-        data: this.visibility.filterPersons(ctx, ordered),
-        page: dto.page,
-        pageSize: dto.pageSize,
-        total,
-      };
+      // Preserve trigram ranking order; keep only fully-loaded Person rows.
+      raw = idRows.map((r) => byId.get(r.id)).filter((p): p is Person => p !== undefined);
+      total = count;
+    } else {
+      const where: Prisma.PersonWhereInput = { deletedAt: null };
+      const [data, count] = await Promise.all([
+        this.repo.findMany(where, skip, dto.pageSize),
+        this.repo.count(where),
+      ]);
+      raw = data;
+      total = count;
     }
 
-    const where: Prisma.PersonWhereInput = { deletedAt: null };
-    const [data, total] = await Promise.all([
-      this.repo.findMany(where, skip, dto.pageSize),
-      this.repo.count(where),
-    ]);
+    // Single, unavoidable visibility choke point for BOTH paths.
     return {
-      data: this.visibility.filterPersons(ctx, data),
+      data: this.visibility.filterPersons(ctx, raw),
       page: dto.page,
       pageSize: dto.pageSize,
       total,

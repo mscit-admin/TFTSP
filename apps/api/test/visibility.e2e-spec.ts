@@ -216,4 +216,40 @@ describe('M3 Visibility & Privacy (Spec §3·M3)', () => {
     expect(approved.body.grantedUserId).toBeTruthy();
     expect(approved.body.validTo).toBeTruthy();
   });
+
+  it('public ID-attachment upload: PNG → key, SVG → 400, oversize → 400', async () => {
+    // Minimal valid PNG (8-byte signature + a bit of payload).
+    const png = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.alloc(64, 1),
+    ]);
+    const ok = await request(server())
+      .post('/api/v1/view-requests/id-attachment')
+      .field('tenantSlug', 'vis')
+      .attach('file', png, 'id.png')
+      .expect(201);
+    expect(typeof ok.body.idAttachmentKey).toBe('string');
+    expect(ok.body.idAttachmentKey).toContain('view-request-ids/vis/');
+
+    // SVG rejected by content sniff even with a .png name.
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script/></svg>', 'utf8');
+    const svgRes = await request(server())
+      .post('/api/v1/view-requests/id-attachment')
+      .field('tenantSlug', 'vis')
+      .attach('file', svg, 'evil.png');
+    expect(svgRes.status).toBe(400);
+    expect(svgRes.body.messageKey).toBe('errors.upload.svg_rejected');
+
+    // Oversize (> 10 MB) rejected.
+    const big = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.alloc(10 * 1024 * 1024 + 1024, 2),
+    ]);
+    const bigRes = await request(server())
+      .post('/api/v1/view-requests/id-attachment')
+      .field('tenantSlug', 'vis')
+      .attach('file', big, 'big.png');
+    expect(bigRes.status).toBe(400);
+    expect(bigRes.body.messageKey).toBe('errors.upload.file_too_large');
+  }, 30_000);
 });

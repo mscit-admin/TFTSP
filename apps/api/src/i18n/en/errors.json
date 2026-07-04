@@ -14,7 +14,14 @@
     "not_found": "View request not found.",
     "invalid_state": "This action is not allowed in the request's current state.",
     "id_required": "An ID attachment is required for this tribe.",
-    "valid_to_required": "An expiry date (validTo) is required."
+    "valid_to_required": "An expiry date (validTo) is required.",
+    "tenant_slug_required": "A tenantSlug field is required."
+  },
+  "upload": {
+    "no_file": "No file was uploaded.",
+    "file_too_large": "The file exceeds the size limit.",
+    "unsupported_type": "Unsupported file type. Only images (PNG/JPEG/WEBP/GIF) and PDF are accepted.",
+    "svg_rejected": "SVG files are not allowed."
   },
   "tenant": {
     "not_found": "Tribe not found.",
