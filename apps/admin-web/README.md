@@ -44,6 +44,23 @@ npm run build       # outputs to dist/admin-web
 | Tree preview | `/tree` | **minimal** vertical SVG from `/tree` (rich d3 renderer is M4) |
 | Tribe settings | `/settings` | name, colors (live preview), logo (upload stubbed to API shape) |
 
+### M2 — Change Requests, Approval Workflow, Notifications
+
+| Area | Route | Notes |
+|---|---|---|
+| Review queue | `/change-requests` | reviewers/admins; list `?queue=true` + `?status=` filter, status badges |
+| Request detail | `/change-requests/:id` | human-readable RFC-6902 diff (field → current/proposed), reviewer actions (`approve`/`reject`/`request_changes` + comment), owner patch-edit + resubmit |
+| My requests | `/my-requests` | `?mine=true`; `changes_requested`/`conflict` rows are flagged and editable |
+| Workflow settings | `/workflow-settings` | Tribe Admin only — approvalsRequired (1–3), expiryDays, reviewerCanEdit |
+| Notifications | topbar bell | `GET /notifications`, unread badge, mark-read/read-all, **live** via Socket.IO |
+
+- **Non-admin write path:** when the user is not an M1 write-role, the person form computes a
+  JSON Patch and submits a **Change Request** (`POST /change-requests` → `/submit`) instead of a
+  direct write; admins keep direct write. Patch helpers live in `core/util/person-patch.ts`.
+- **Socket.IO:** `NotificationService` owns the client (namespace `/notifications`, JWT in the
+  handshake `auth`, same-origin via the `/socket.io` ws proxy). The authenticated shell opens it
+  on entry and closes it on logout; incoming `notification` events update the bell and raise a toast.
+
 ### Auth flow
 
 - `AuthService` holds session state as Signals; tokens live in `TokenStorageService`
@@ -62,12 +79,14 @@ npm run build       # outputs to dist/admin-web
 
 ## Data-access rule
 
-Components never call `HttpClient` directly. `ApiService` is the only HTTP surface;
-typed resource services (`PersonService`, `TribalUnitService`, `UnionService`,
-`TreeService`, `TenantSettingsService`, `AuthService`) sit on top of it.
+Components never call `HttpClient` (or the socket) directly. `ApiService` is the only HTTP
+surface; typed resource services (`PersonService`, `TribalUnitService`, `UnionService`,
+`TreeService`, `TenantSettingsService`, `AuthService`, plus M2's `ChangeRequestService`,
+`WorkflowSettingsService`, `NotificationService`) sit on top of it. All Socket.IO wiring is
+confined to `NotificationService`.
 
-## Deliberately out of M1 scope
+## Deliberately out of scope (current)
 
-Approval-workflow UI, bulk import, visibility settings, exports, subscriptions,
-crowdsourcing, and the rich d3/canvas tree renderer. See root `DECISIONS.md`
-(`D-ADMIN-*`) for the choices made.
+Bulk import (M2.5), visibility/privacy settings (M3), exports/subscriptions/crowdsourcing (M4),
+mobile (M5), and the rich d3/canvas tree renderer. See root `DECISIONS.md` (`D-2xx`) for the
+choices made.

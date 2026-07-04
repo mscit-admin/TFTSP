@@ -6,3 +6,5 @@ export * from './auth';
 export * from './tenant';
 export * from './tree';
 export * from './common';
+export * from './change-request';
+export * from './notification';

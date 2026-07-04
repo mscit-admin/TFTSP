@@ -39,6 +39,18 @@ export class AuthService {
     this._roleAssignments().some((ra) => M1_WRITE_ROLES.includes(ra.role)),
   );
 
+  /** Distinct roles currently held by the user in the active tenant. */
+  readonly roles = computed(() => Array.from(new Set(this._roleAssignments().map((ra) => ra.role))));
+
+  /** Tribe Admin only — gates the workflow-settings page (M2). */
+  readonly isTribeAdmin = computed(() => this.roles().includes('tribe_admin'));
+
+  /** Can act on the review queue: Reviewers plus admin write-roles (M2). */
+  readonly canReview = computed(() => this.roles().includes('reviewer') || this.canWrite());
+
+  /** Current user id (for change-request ownership / socket rooms). */
+  readonly userId = computed(() => this._user()?.id ?? null);
+
   /** Has a stored token — used by the guard before `me()` resolves on refresh. */
   get hasStoredSession(): boolean {
     return this.storage.accessToken !== null;

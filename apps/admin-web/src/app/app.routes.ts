@@ -42,6 +42,34 @@ export const routes: Routes = [
           import('./features/tree/tree-view.component').then((m) => m.TreeViewComponent),
       },
       {
+        path: 'change-requests',
+        loadComponent: () =>
+          import('./features/change-requests/review-queue.component').then(
+            (m) => m.ReviewQueueComponent,
+          ),
+      },
+      {
+        path: 'change-requests/:id',
+        loadComponent: () =>
+          import('./features/change-requests/change-request-detail.component').then(
+            (m) => m.ChangeRequestDetailComponent,
+          ),
+      },
+      {
+        path: 'my-requests',
+        loadComponent: () =>
+          import('./features/change-requests/my-requests.component').then(
+            (m) => m.MyRequestsComponent,
+          ),
+      },
+      {
+        path: 'workflow-settings',
+        loadComponent: () =>
+          import('./features/workflow-settings/workflow-settings.component').then(
+            (m) => m.WorkflowSettingsComponent,
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/tribe-settings.component').then(

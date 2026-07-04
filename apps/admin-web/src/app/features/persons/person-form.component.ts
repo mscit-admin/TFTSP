@@ -13,8 +13,10 @@ import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { PersonService } from '../../core/services/person.service';
 import { TribalUnitService } from '../../core/services/tribal-unit.service';
+import { ChangeRequestService } from '../../core/services/change-request.service';
 import { AuthService } from '../../core/services/auth.service';
 import { LanguageService } from '../../core/services/language.service';
+import { buildCreatePatch, buildUpdatePatch } from '../../core/util/person-patch';
 import type {
   ApiErrorBody,
   CreatePersonDto,
@@ -56,7 +58,7 @@ import { DUPLICATE_MESSAGE_KEY, VERSION_CONFLICT_MESSAGE_KEY } from '../../core/
       </div>
 
       @if (!canWrite()) {
-        <p-message severity="warn" [text]="'nav.readOnlyNotice' | translate" styleClass="mb-4" />
+        <p-message severity="info" [text]="'persons.proposalNotice' | translate" styleClass="mb-4" />
       }
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -197,9 +199,9 @@ import { DUPLICATE_MESSAGE_KEY, VERSION_CONFLICT_MESSAGE_KEY } from '../../core/
         <div class="mt-2 flex gap-2 md:col-span-2">
           <p-button
             type="submit"
-            [label]="'actions.save' | translate"
+            [label]="submitLabelKey() | translate"
             [loading]="saving()"
-            [disabled]="form.invalid || saving() || !canWrite()"
+            [disabled]="form.invalid || saving()"
           />
           <p-button
             type="button"
@@ -256,6 +258,7 @@ export class PersonFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly personService = inject(PersonService);
   private readonly unitService = inject(TribalUnitService);
+  private readonly changeRequests = inject(ChangeRequestService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
@@ -267,6 +270,10 @@ export class PersonFormComponent {
 
   readonly canWrite = this.auth.canWrite;
   readonly isEdit = computed(() => !!this.id());
+  /** Non-admins submit a Change Request instead of a direct write (M2). */
+  readonly submitLabelKey = computed(() =>
+    this.canWrite() ? 'actions.save' : 'changeRequests.submitForReview',
+  );
 
   readonly saving = signal(false);
   readonly errorKey = signal<string | null>(null);
@@ -277,6 +284,8 @@ export class PersonFormComponent {
   readonly duplicates = signal<DuplicateCandidate[]>([]);
 
   private version = 0;
+  /** Original entity kept for computing an update JSON Patch on the non-admin path. */
+  private original: Person | null = null;
 
   readonly genderOptions = [
     { label: this.i18n.instant('persons.genderValue.male'), value: 'male' as Gender },
@@ -326,6 +335,7 @@ export class PersonFormComponent {
     this.personService.get(id).subscribe({
       next: (p) => {
         this.version = p.version;
+        this.original = p;
         this.form.patchValue({
           firstName: p.firstName,
           fatherName: p.fatherName ?? '',
@@ -396,11 +406,61 @@ export class PersonFormComponent {
     }
     this.errorKey.set(null);
     const id = this.id();
+    // Non-admin roles route the write through the approval workflow (M2).
+    if (!this.canWrite()) {
+      this.submitAsChangeRequest(id);
+      return;
+    }
     if (id) {
       this.doUpdate(id);
     } else {
       this.doCreate(false);
     }
+  }
+
+  /** Build a JSON-Patch change request and submit it for review (non-admin path). */
+  private submitAsChangeRequest(id?: string): void {
+    const dto = this.buildDto();
+    const patch = id
+      ? buildUpdatePatch(this.original ?? ({} as Person), dto)
+      : buildCreatePatch(dto);
+
+    if (id && patch.length === 0) {
+      this.errorKey.set('changeRequests.noChanges');
+      return;
+    }
+
+    this.saving.set(true);
+    this.changeRequests
+      .create({
+        targetType: 'person',
+        targetId: id,
+        operation: id ? 'update' : 'create',
+        patch,
+      })
+      .subscribe({
+        next: (cr) => {
+          // Created as draft → submit into the review queue.
+          this.changeRequests.submit(cr.id).subscribe({
+            next: () => {
+              this.saving.set(false);
+              this.messages.add({
+                severity: 'success',
+                detail: this.i18n.instant('changeRequests.submittedToast'),
+              });
+              this.router.navigate(['/my-requests']);
+            },
+            error: (err: HttpErrorResponse) => this.onChangeRequestError(err),
+          });
+        },
+        error: (err: HttpErrorResponse) => this.onChangeRequestError(err),
+      });
+  }
+
+  private onChangeRequestError(err: HttpErrorResponse): void {
+    this.saving.set(false);
+    const body = err.error as ApiErrorBody | undefined;
+    this.errorKey.set(body?.messageKey ?? 'errors.generic');
   }
 
   private doCreate(confirmDuplicate: boolean): void {

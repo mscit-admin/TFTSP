@@ -30,14 +30,13 @@ import type { Person } from '../../core/models';
     <div class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-xl font-semibold text-gray-800">{{ 'persons.title' | translate }}</h1>
-        @if (canWrite()) {
-          <p-button
-            icon="pi pi-plus"
-            [label]="'persons.new' | translate"
-            routerLink="/persons/new"
-            size="small"
-          />
-        }
+        <!-- Admins create directly; non-admins reach the form to propose a Change Request (M2). -->
+        <p-button
+          icon="pi pi-plus"
+          [label]="(canWrite() ? 'persons.new' : 'persons.propose') | translate"
+          routerLink="/persons/new"
+          size="small"
+        />
       </div>
 
       <div class="max-w-md">

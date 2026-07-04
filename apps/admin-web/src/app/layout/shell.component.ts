@@ -1,9 +1,13 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
+import { MessageService } from 'primeng/api';
 import { AuthService } from '../core/services/auth.service';
 import { LanguageService } from '../core/services/language.service';
+import { NotificationService } from '../core/services/notification.service';
+import { NotificationBellComponent } from './notification-bell.component';
 
 interface NavItem {
   route: string;
@@ -14,7 +18,14 @@ interface NavItem {
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, ButtonModule],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    TranslatePipe,
+    ButtonModule,
+    NotificationBellComponent,
+  ],
   template: `
     <div class="flex min-h-screen flex-col">
       <!-- Topbar -->
@@ -37,6 +48,7 @@ interface NavItem {
         </div>
 
         <div class="flex items-center gap-2">
+          <app-notification-bell />
           <p-button
             [label]="lang.isRtl() ? 'EN' : 'ع'"
             severity="secondary"
@@ -65,7 +77,7 @@ interface NavItem {
           [class.lg:block]="true"
         >
           <nav class="flex flex-col gap-1">
-            @for (item of nav; track item.route) {
+            @for (item of navItems(); track item.route) {
               <a
                 [routerLink]="item.route"
                 routerLinkActive="bg-tribe/10 text-tribe font-medium"
@@ -78,8 +90,8 @@ interface NavItem {
             }
           </nav>
           @if (!canWrite()) {
-            <p class="mt-4 rounded-md bg-amber-50 p-2 text-xs text-amber-700">
-              {{ 'nav.readOnlyNotice' | translate }}
+            <p class="mt-4 rounded-md bg-sky-50 p-2 text-xs text-sky-700">
+              {{ 'nav.proposalNotice' | translate }}
             </p>
           }
         </aside>
@@ -95,17 +107,34 @@ interface NavItem {
 export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly notifications = inject(NotificationService);
+  private readonly messages = inject(MessageService);
+  private readonly i18n = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly lang = inject(LanguageService);
 
   readonly sidebarOpen = signal(false);
   readonly canWrite = this.auth.canWrite;
 
-  readonly nav: NavItem[] = [
+  private readonly baseNav: NavItem[] = [
     { route: '/persons', labelKey: 'nav.persons', icon: 'pi-users' },
     { route: '/tribal-units', labelKey: 'nav.tribalUnits', icon: 'pi-sitemap' },
     { route: '/tree', labelKey: 'nav.tree', icon: 'pi-share-alt' },
-    { route: '/settings', labelKey: 'nav.settings', icon: 'pi-cog' },
   ];
+
+  /** Nav list is role-gated (review queue for reviewers/admins, settings for Tribe Admin). */
+  readonly navItems = computed<NavItem[]>(() => {
+    const items = [...this.baseNav];
+    if (this.auth.canReview()) {
+      items.push({ route: '/change-requests', labelKey: 'nav.reviewQueue', icon: 'pi-inbox' });
+    }
+    items.push({ route: '/my-requests', labelKey: 'nav.myRequests', icon: 'pi-file-edit' });
+    items.push({ route: '/settings', labelKey: 'nav.settings', icon: 'pi-cog' });
+    if (this.auth.isTribeAdmin()) {
+      items.push({ route: '/workflow-settings', labelKey: 'nav.workflow', icon: 'pi-sliders-h' });
+    }
+    return items;
+  });
 
   readonly userName = computed(() => this.auth.user()?.fullName ?? '');
   readonly tenantName = computed(() => {
@@ -114,11 +143,25 @@ export class ShellComponent {
     return this.lang.isRtl() ? t.tenantNameAr : t.tenantNameEn;
   });
 
+  constructor() {
+    // Authenticated container: load notifications + open the socket, toast live arrivals.
+    this.notifications.init();
+    this.notifications.incoming$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((n) => {
+      this.messages.add({
+        severity: 'info',
+        summary: this.i18n.instant('notifications.title'),
+        detail: this.i18n.instant('notifications.messages.' + n.type),
+        life: 5000,
+      });
+    });
+  }
+
   onNavClick(): void {
     if (window.innerWidth < 1024) this.sidebarOpen.set(false);
   }
 
   logout(): void {
+    this.notifications.reset();
     this.auth.logout().subscribe({
       next: () => this.router.navigate(['/login']),
       error: () => this.router.navigate(['/login']),

@@ -11,9 +11,13 @@
     "tribalUnits": "الوحدات القبلية",
     "tree": "شجرة العائلة",
     "settings": "إعدادات القبيلة",
+    "reviewQueue": "قائمة المراجعة",
+    "myRequests": "طلباتي",
+    "workflow": "إعدادات سير العمل",
     "switchLanguage": "تبديل اللغة",
     "logout": "تسجيل الخروج",
-    "readOnlyNotice": "صلاحيتك للقراءة فقط. التعديل يتطلب دوراً إدارياً."
+    "readOnlyNotice": "صلاحيتك للقراءة فقط. التعديل يتطلب دوراً إدارياً.",
+    "proposalNotice": "تُرسَل تعديلاتك كطلبات تغيير لمراجعة المسؤولين."
   },
   "auth": {
     "loginSubtitle": "سجّل الدخول لإدارة بيانات قبيلتك.",
@@ -26,11 +30,14 @@
     "delete": "حذف",
     "save": "حفظ",
     "cancel": "إلغاء",
-    "back": "رجوع"
+    "back": "رجوع",
+    "view": "عرض"
   },
   "persons": {
     "title": "الأشخاص",
     "new": "إضافة شخص",
+    "propose": "اقتراح شخص",
+    "proposalNotice": "لست مسؤولاً. سيؤدي الحفظ إلى إرسال هذا كطلب تغيير للمراجعة.",
     "newTitle": "شخص جديد",
     "editTitle": "تعديل شخص",
     "searchPlaceholder": "ابحث بالاسم…",
@@ -120,6 +127,120 @@
     "reload": "إعادة التحميل",
     "empty": "لا توجد بيانات شجرة.",
     "m1Notice": "معاينة أساسية للشجرة. العارض التفاعلي عالي التفاصيل يأتي في مرحلة لاحقة."
+  },
+  "changeRequests": {
+    "queueTitle": "قائمة المراجعة",
+    "mineTitle": "طلباتي",
+    "detailTitle": "طلب تغيير",
+    "filterStatus": "تصفية حسب الحالة",
+    "review": "مراجعة",
+    "edit": "تعديل وإعادة إرسال",
+    "actionNeeded": "يتطلب إجراءً",
+    "queueEmpty": "لا شيء بانتظار مراجعتك.",
+    "mineEmpty": "لم ترسل أي طلبات تغيير بعد.",
+    "notFound": "طلب التغيير غير موجود.",
+    "diffTitle": "التغييرات المقترحة",
+    "editPatchTitle": "تعديل اقتراحك",
+    "saveDraft": "حفظ كمسودة",
+    "resubmit": "إعادة الإرسال",
+    "resubmitted": "أُعيد إرساله للمراجعة.",
+    "saved": "تم حفظ المسودة.",
+    "reviewTitle": "مراجعتك",
+    "reviewsTitle": "المراجعات",
+    "commentPlaceholder": "تعليق اختياري…",
+    "submitReview": "إرسال المراجعة",
+    "reviewSubmitted": "تم إرسال المراجعة.",
+    "conflictNotice": "تغيّر الهدف منذ إنشاء هذا الطلب. عدّل وأعد الإرسال لحل التعارض.",
+    "submitForReview": "إرسال للمراجعة",
+    "submittedToast": "تم الإرسال للمراجعة.",
+    "submittedForReview": "تم إرسال طلب التغيير.",
+    "noChanges": "لا توجد تغييرات لإرسالها.",
+    "fields": {
+      "target": "الهدف",
+      "operation": "العملية",
+      "requester": "مقدّم الطلب",
+      "status": "الحالة",
+      "created": "أُنشئ",
+      "expires": "ينتهي"
+    },
+    "target": {
+      "person": "شخص",
+      "union": "زواج",
+      "tribal_unit": "وحدة قبلية"
+    },
+    "operation": {
+      "create": "إنشاء",
+      "update": "تعديل",
+      "delete": "حذف"
+    },
+    "status": {
+      "draft": "مسودة",
+      "submitted": "مُرسَل",
+      "under_review": "قيد المراجعة",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "changes_requested": "مطلوب تعديلات",
+      "published": "منشور",
+      "conflict": "تعارض",
+      "expired": "منتهٍ"
+    },
+    "decision": {
+      "approve": "اعتماد",
+      "reject": "رفض",
+      "request_changes": "طلب تعديلات"
+    },
+    "diff": {
+      "field": "الحقل",
+      "old": "الحالي",
+      "new": "المقترح",
+      "removed": "محذوف"
+    }
+  },
+  "crFields": {
+    "firstName": "الاسم الأول",
+    "fatherName": "اسم الأب",
+    "grandfatherName": "اسم الجد",
+    "familyName": "اسم العائلة",
+    "laqab": "اللقب",
+    "gender": "الجنس",
+    "birthDate": "تاريخ الميلاد",
+    "birthPlace": "مكان الميلاد",
+    "isDeceased": "متوفى",
+    "deathDate": "تاريخ الوفاة",
+    "deathPlace": "مكان الوفاة",
+    "fatherId": "الأب",
+    "motherId": "الأم",
+    "tribalUnitId": "الوحدة القبلية",
+    "profession": "المهنة"
+  },
+  "workflow": {
+    "title": "إعدادات سير العمل",
+    "subtitle": "اضبط كيفية مراجعة طلبات التغيير واعتمادها لهذه القبيلة.",
+    "saved": "تم حفظ إعدادات سير العمل.",
+    "fields": {
+      "approvalsRequired": "عدد الموافقات المطلوبة",
+      "expiryDays": "مدة انتهاء الطلب (أيام)",
+      "reviewerCanEdit": "يمكن للمراجع تعديل الطلب مباشرة"
+    },
+    "hints": {
+      "approvalsRequired": "عدد الموافقات المتمايزة (1–3) قبل نشر الطلب.",
+      "expiryDays": "الطلبات التي لا يُبتّ فيها خلال هذه المدة تنتهي تلقائياً."
+    }
+  },
+  "notifications": {
+    "title": "التنبيهات",
+    "markAllRead": "تعليم الكل كمقروء",
+    "empty": "لا توجد تنبيهات.",
+    "messages": {
+      "change_request_submitted": "تم إرسال طلب تغيير جديد.",
+      "change_request_approved": "تم اعتماد طلب التغيير الخاص بك.",
+      "change_request_rejected": "تم رفض طلب التغيير الخاص بك.",
+      "change_request_changes_requested": "طُلبت تعديلات على طلبك.",
+      "change_request_published": "تم نشر طلب التغيير الخاص بك.",
+      "change_request_expiring": "طلب تغيير على وشك الانتهاء.",
+      "change_request_expired": "انتهت صلاحية طلب تغيير.",
+      "change_request_conflict": "يوجد تعارض في طلب التغيير الخاص بك ولم يُطبَّق."
+    }
   },
   "errors": {
     "generic": "حدث خطأ ما. يرجى المحاولة مجدداً.",
