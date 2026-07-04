@@ -15,7 +15,9 @@ export type Permission =
   | 'tribalUnit.read'
   | 'tribalUnit.write'
   | 'tree.read'
-  | 'audit.read';
+  | 'audit.read'
+  | 'tenant.read'
+  | 'tenant.update';
 
 /** Roles allowed to write persons/unions directly in M1 (approval workflow = M2). */
 export const M1_WRITE_ROLES: Role[] = [Role.tribe_admin, Role.deputy_admin, Role.branch_admin];
@@ -40,6 +42,9 @@ export const PERMISSION_MATRIX: Record<Permission, Role[]> = {
   'tribalUnit.write': [Role.tribe_admin, Role.deputy_admin],
   'tree.read': READ_ROLES,
   'audit.read': [Role.tribe_admin, Role.deputy_admin],
+  // Tribe settings (logo/colors/names) — administrative, own tenant only.
+  'tenant.read': [Role.tribe_admin, Role.deputy_admin],
+  'tenant.update': [Role.tribe_admin, Role.deputy_admin],
 };
 
 /**

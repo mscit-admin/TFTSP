@@ -32,6 +32,19 @@
 | POST | `/platform/tenants/:id/activate` | reactivate |
 | GET | `/platform/stats` | `{ tribes, persons, users }` |
 
+## Tenant settings (`/api/v1/tenant/settings`) — current tenant only (from JWT)
+Tribe-settings page (logo + colours + names). Tenant is derived ONLY from the JWT —
+there is no tenant id in path or body, so a Tribe Admin can never target another tribe.
+Guarded by `PolicyGuard`: `tenant.read` (GET) / `tenant.update` (PATCH, logo-upload) — TribeAdmin/DeputyAdmin.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/tenant/settings` | — | `{ nameAr, nameEn, slug, logoKey, primaryColor }` (`logoKey`/`primaryColor` nullable) |
+| PATCH | `/tenant/settings` | `{ nameAr?, nameEn?, primaryColor?, logoKey? }` | same settings shape (audited before/after) |
+| POST | `/tenant/settings/logo-upload` | — | `{ uploadUrl, logoKey }` (MinIO presigned PUT, 15-min TTL; presign stubbed in M1 — see DECISIONS D-108) |
+
+- `primaryColor` is validated as a hex colour (`#RRGGBB`). `slug` is immutable here (platform-owned).
+
 ## Tribal units (`/api/v1/tribal-units`) — tenant-scoped
 CRUD. Entity: `{ id, parent_id, unit_type: tribe|branch|clan|family, name_ar, name_en }`.
 
@@ -48,10 +61,6 @@ Person entity fields: see `packages/shared-types/src/person.ts` (authored from S
 
 **List envelope (reconciled):** `GET /persons` returns `{ data: Person[], page, pageSize, total }`.
 **Conflict errors (reconciled):** duplicate pre-check ⇒ `409 { messageKey: "errors.person.duplicate_candidates", details: { candidates } }`; optimistic-lock mismatch ⇒ `409 { messageKey: "errors.person.version_conflict" }`. Resubmit create with `confirmDuplicate: true`.
-
-## Tenant settings (`/api/v1/tenant/settings`) — tenant-scoped, Tribe Admin — **TODO (M1 gap)**
-Admin-web's settings page consumes `GET /tenant/settings` and `PATCH /tenant/settings` (logo key + colors)
-plus a stubbed logo upload. Backend endpoint not yet built — tracked as the one open M1 backend item.
 
 ## Unions (`/api/v1/unions`) — tenant-scoped
 CRUD + lifecycle: create, divorce, widow, remarry.

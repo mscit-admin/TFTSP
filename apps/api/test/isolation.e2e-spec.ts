@@ -93,6 +93,24 @@ describe('Cross-tenant isolation (Spec §4.5)', () => {
     expect(ids).not.toContain(personB);
   });
 
+  it('tenant settings are scoped to the caller: A patches self, B is untouched', async () => {
+    const tenantB = await ctx.owner.tenant.findUniqueOrThrow({ where: { slug: 'tenant-b' } });
+    const beforeB = tenantB.nameEn;
+
+    // Admin A can only ever hit their OWN settings (no tenant id in path/body).
+    await request(ctx.app.getHttpServer())
+      .patch('/api/v1/tenant/settings')
+      .set(auth(tokenA))
+      .send({ nameEn: 'Renamed By A', primaryColor: '#123456' })
+      .expect(200);
+
+    const a = await ctx.owner.tenant.findUniqueOrThrow({ where: { slug: 'tenant-a' } });
+    expect(a.nameEn).toBe('Renamed By A');
+
+    const b = await ctx.owner.tenant.findUniqueOrThrow({ where: { slug: 'tenant-b' } });
+    expect(b.nameEn).toBe(beforeB); // Tenant B never changed
+  });
+
   it('cannot create a union referencing a Tenant B person', async () => {
     const wifeA = await seedPerson(
       ctx.owner,

@@ -17,6 +17,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { LineageModule } from './modules/lineage/lineage.module';
 import { PersonsModule } from './modules/persons/persons.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { TenantSettingsModule } from './modules/tenant-settings/tenant-settings.module';
 import { TribalUnitsModule } from './modules/tribal-units/tribal-units.module';
 import { UnionsModule } from './modules/unions/unions.module';
 
@@ -56,6 +57,7 @@ import { UnionsModule } from './modules/unions/unions.module';
     AuditModule,
     AuthModule,
     PlatformModule,
+    TenantSettingsModule,
     TribalUnitsModule,
     PersonsModule,
     UnionsModule,
