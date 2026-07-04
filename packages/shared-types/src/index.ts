@@ -13,3 +13,6 @@ export * from './roles';
 // M2
 export * from './change-request';
 export * from './notification';
+
+// M2.5
+export * from './import';
