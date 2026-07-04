@@ -101,6 +101,7 @@ enum NotificationType {
   change_request_expiring
   change_request_expired
   change_request_conflict
+  view_request_submitted // M3 — non-member tree-view request awaiting admin review
 }
 
 // ---- M2.5: Bulk Import ----
@@ -136,6 +137,37 @@ enum ImportRowDecision {
   ignore
 }
 
+// ---- M3: Visibility & Privacy ----
+
+enum VisibilityLevel {
+  public
+  members
+  family
+  branch
+  admin
+}
+
+enum WomenDisplayMode {
+  under_father
+  with_siblings
+  under_husband
+  hidden
+}
+
+enum MemberScope {
+  direct
+  clan
+  branch
+  tribe
+}
+
+enum ViewRequestStatus {
+  pending
+  approved
+  rejected
+  expired
+}
+
 // ---------------------------------------------------------------------------
 // Platform-level tables (OUTSIDE RLS) — Spec Section 4.4
 // ---------------------------------------------------------------------------
@@ -162,6 +194,8 @@ model Tenant {
   notifications    Notification[]
   workflowSettings WorkflowSettings?
   importBatches    ImportBatch[]
+  visibilitySettings VisibilitySettings?
+  viewRequests       ViewRequest[]
 
   @@map("tenants")
 }
@@ -216,6 +250,10 @@ model RoleAssignment {
   userId       String    @map("user_id") @db.Uuid
   role         Role
   tribalUnitId String?   @map("tribal_unit_id") @db.Uuid // scopes branch_admin and below
+  // M3 visibility: member read scope + the member's own person node (anchor) for
+  // "direct relatives" resolution. Null memberScope falls back to defaultMemberScope.
+  memberScope    MemberScope? @map("member_scope")
+  anchorPersonId String?      @map("anchor_person_id") @db.Uuid
   validFrom    DateTime  @default(now()) @map("valid_from")
   validTo      DateTime? @map("valid_to")
   createdAt    DateTime  @default(now()) @map("created_at")
@@ -494,4 +532,51 @@ model ImportRow {
   @@index([tenantId, importBatchId, status])
   @@index([importBatchId, rowRef])
   @@map("import_rows")
+}
+
+// ---------------------------------------------------------------------------
+// M3 tenant-scoped tables (UNDER RLS) — Spec §3 M3
+// ---------------------------------------------------------------------------
+
+// One row per tenant. Baseline visibility level + field policies (Spec §3·M3.2/3.3).
+model VisibilitySettings {
+  tenantId                String           @id @map("tenant_id") @db.Uuid
+  level                   VisibilityLevel  @default(members)
+  womenDisplay            WomenDisplayMode @default(with_siblings) @map("women_display")
+  showPhotos              Boolean          @default(true) @map("show_photos")
+  showPhones              Boolean          @default(false) @map("show_phones")
+  showBirthDates          Boolean          @default(true) @map("show_birth_dates")
+  showDeceased            Boolean          @default(true) @map("show_deceased")
+  showMinors              Boolean          @default(true) @map("show_minors")
+  showDocuments           Boolean          @default(false) @map("show_documents")
+  defaultMemberScope      MemberScope      @default(tribe) @map("default_member_scope")
+  requireIdForViewRequest Boolean          @default(false) @map("require_id_for_view_request")
+  createdAt               DateTime         @default(now()) @map("created_at")
+  updatedAt               DateTime         @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("visibility_settings")
+}
+
+// Non-member tree-view requests (Spec §3·M3.5). Approval grants a temporary Viewer.
+model ViewRequest {
+  id             String            @id @default(uuid()) @db.Uuid
+  tenantId       String            @map("tenant_id") @db.Uuid
+  fullName       String            @map("full_name")
+  phone          String
+  allegedBranch  String?           @map("alleged_branch")
+  reason         String
+  idAttachmentKey String?          @map("id_attachment_key")
+  status         ViewRequestStatus @default(pending)
+  reviewedBy     String?           @map("reviewed_by") @db.Uuid
+  grantedUserId  String?           @map("granted_user_id") @db.Uuid
+  validTo        DateTime?         @map("valid_to")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@map("view_requests")
 }

@@ -30,5 +30,9 @@
   "change_request_conflict": {
     "subject": "Change request conflict",
     "body": "The target was modified after your request was created, so it could not be applied. Please re-draft."
+  },
+  "view_request_submitted": {
+    "subject": "New tree-view request",
+    "body": "A non-member has requested access to view the family tree and is awaiting your review."
   }
 }

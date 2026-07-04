@@ -10,6 +10,7 @@ import { buildFullName } from '../../common/util/arabic';
 import { parsePartialDate } from '../../common/util/dates';
 import { AuditService } from '../audit/audit.service';
 import { LineageService } from '../lineage/lineage.service';
+import { VisibilityResolver } from '../visibility/visibility.resolver';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { ListPersonsDto } from './dto/list-persons.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
@@ -37,6 +38,7 @@ export class PersonsService {
     private readonly audit: AuditService,
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    private readonly visibility: VisibilityResolver,
     config: ConfigService,
   ) {
     this.duplicateThreshold = config.get<number>('duplicateSimilarityThreshold') ?? 0.6;
@@ -44,6 +46,8 @@ export class PersonsService {
 
   async list(dto: ListPersonsDto): Promise<PaginatedPersons> {
     const skip = (dto.page - 1) * dto.pageSize;
+    const ctx = await this.visibility.buildContext();
+
     if (dto.q && dto.q.trim().length > 0) {
       const [idRows, total] = await Promise.all([
         this.repo.searchIds(dto.q.trim(), skip, dto.pageSize),
@@ -52,7 +56,13 @@ export class PersonsService {
       const persons = await this.repo.loadByIds(idRows.map((r) => r.id));
       const byId = new Map(persons.map((p) => [p.id, p]));
       const ordered = idRows.map((r) => byId.get(r.id)).filter((p): p is Person => p !== undefined);
-      return { data: ordered, page: dto.page, pageSize: dto.pageSize, total };
+      // EVERY read passes the Visibility Resolver (Spec §3·M3.1).
+      return {
+        data: this.visibility.filterPersons(ctx, ordered),
+        page: dto.page,
+        pageSize: dto.pageSize,
+        total,
+      };
     }
 
     const where: Prisma.PersonWhereInput = { deletedAt: null };
@@ -60,12 +70,19 @@ export class PersonsService {
       this.repo.findMany(where, skip, dto.pageSize),
       this.repo.count(where),
     ]);
-    return { data, page: dto.page, pageSize: dto.pageSize, total };
+    return {
+      data: this.visibility.filterPersons(ctx, data),
+      page: dto.page,
+      pageSize: dto.pageSize,
+      total,
+    };
   }
 
   async findOne(id: string): Promise<Person> {
-    const person = await this.repo.findById(id);
+    const ctx = await this.visibility.buildContext();
+    const person = this.visibility.resolveOne(ctx, await this.repo.findById(id));
     if (!person) {
+      // 404 (not 403) so existence outside the viewer's scope is not leaked.
       throw AppException.notFound(ErrorKeys.PERSON_NOT_FOUND, { id });
     }
     return person;

@@ -29,6 +29,9 @@ import { JobsModule } from './modules/jobs/jobs.module';
 // M2.5
 import { MinioModule } from './common/minio/minio.module';
 import { ImportsModule } from './modules/imports/imports.module';
+// M3
+import { VisibilityModule } from './modules/visibility/visibility.module';
+import { ViewRequestsModule } from './modules/view-requests/view-requests.module';
 
 // BullMQ scheduler needs Redis; disable in tests/CI-without-redis via ENABLE_SCHEDULER=false.
 const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
@@ -82,6 +85,9 @@ const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
     // M2.5
     MinioModule,
     ImportsModule,
+    // M3 — VisibilityModule is @Global; every person read path injects the resolver.
+    VisibilityModule,
+    ViewRequestsModule,
     ...(schedulerEnabled ? [JobsModule] : []),
   ],
   providers: [

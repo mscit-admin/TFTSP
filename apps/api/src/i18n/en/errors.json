@@ -7,7 +7,14 @@
     "refresh_token_reused": "Refresh token reuse detected. The session has been revoked.",
     "no_tenant_membership": "This account has no membership in the requested tribe.",
     "unauthorized": "Authentication required.",
-    "forbidden": "You do not have permission to perform this action."
+    "forbidden": "You do not have permission to perform this action.",
+    "grant_expired": "Your temporary access has expired."
+  },
+  "view_request": {
+    "not_found": "View request not found.",
+    "invalid_state": "This action is not allowed in the request's current state.",
+    "id_required": "An ID attachment is required for this tribe.",
+    "valid_to_required": "An expiry date (validTo) is required."
   },
   "tenant": {
     "not_found": "Tribe not found.",

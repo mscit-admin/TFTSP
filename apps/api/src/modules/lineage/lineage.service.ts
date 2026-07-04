@@ -5,6 +5,7 @@ import { ErrorKeys } from '../../common/errors/error-keys';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant-context';
 import { TenantTransactionClient } from '../../common/prisma/prisma.extension';
+import { VisibilityResolver, ViewerContext } from '../visibility/visibility.resolver';
 import { LineageRepository } from './lineage.repository';
 
 export interface TreeNode {
@@ -36,6 +37,7 @@ export class LineageService {
     private readonly repo: LineageRepository,
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    private readonly visibility: VisibilityResolver,
   ) {}
 
   // ---- write helpers (must be called within a tenant transaction) ----------
@@ -87,24 +89,33 @@ export class LineageService {
   // ---- read paths ----------------------------------------------------------
 
   async getAncestors(personId: string): Promise<Person[]> {
+    // Viewer context is built OUTSIDE the tx (its own queries need the wrapped client).
+    const ctx = await this.visibility.buildContext();
     return this.prisma.tenantTransaction(async (tx) => {
-      await this.assertPersonExists(tx, personId);
+      const root = await this.assertPersonExists(tx, personId);
+      this.assertVisible(ctx, root, personId);
       const rows = await this.repo.ancestors(tx, personId);
-      return this.loadPersonsInOrder(tx, rows);
+      const persons = await this.loadPersonsInOrder(tx, rows);
+      return this.visibility.filterPersons(ctx, persons);
     });
   }
 
   async getDescendants(personId: string): Promise<Person[]> {
+    const ctx = await this.visibility.buildContext();
     return this.prisma.tenantTransaction(async (tx) => {
-      await this.assertPersonExists(tx, personId);
+      const root = await this.assertPersonExists(tx, personId);
+      this.assertVisible(ctx, root, personId);
       const rows = await this.repo.descendants(tx, personId);
-      return this.loadPersonsInOrder(tx, rows);
+      const persons = await this.loadPersonsInOrder(tx, rows);
+      return this.visibility.filterPersons(ctx, persons);
     });
   }
 
   async getTree(rootId: string, generations: number): Promise<TreeResponse> {
+    const ctx = await this.visibility.buildContext();
     return this.prisma.tenantTransaction(async (tx) => {
       const root = await this.assertPersonExists(tx, rootId);
+      this.assertVisible(ctx, root, rootId);
       // Descendants within the requested generation window (+1 to detect truncation).
       const within = await this.repo.descendants(tx, rootId, generations);
       const beyond = await this.repo.descendants(tx, rootId, generations + 1);
@@ -126,11 +137,15 @@ export class LineageService {
 
       const nodes: TreeNode[] = [];
       const edges: TreeEdge[] = [];
+      const visibleIds = new Set<string>();
       for (const id of ids) {
         const p = byId.get(id) ?? (id === rootId ? root : undefined);
-        if (!p) {
+        // Tree nodes pass the Visibility Resolver too — hidden persons (women-hidden,
+        // out-of-scope, deceased/minors per policy) are dropped, not nulled.
+        if (!p || !this.visibility.isVisible(ctx, p)) {
           continue;
         }
+        visibleIds.add(p.id);
         nodes.push({
           id: p.id,
           name: p.fullName,
@@ -138,7 +153,11 @@ export class LineageService {
           isDeceased: p.isDeceased,
           childrenCount: countByFather.get(p.id) ?? 0,
         });
-        if (p.fatherId && byId.has(p.fatherId)) {
+      }
+      // Only emit edges between two visible nodes.
+      for (const id of visibleIds) {
+        const p = byId.get(id) ?? (id === rootId ? root : undefined);
+        if (p?.fatherId && visibleIds.has(p.fatherId)) {
           edges.push({ parentId: p.fatherId, childId: p.id, via: 'father' });
         }
       }
@@ -147,6 +166,13 @@ export class LineageService {
   }
 
   // ---- helpers -------------------------------------------------------------
+
+  /** 404 (not 403) when the root itself is outside the viewer's visibility. */
+  private assertVisible(ctx: ViewerContext, person: Person, id: string): void {
+    if (!this.visibility.isVisible(ctx, person)) {
+      throw AppException.notFound(ErrorKeys.PERSON_NOT_FOUND, { id });
+    }
+  }
 
   private async assertPersonExists(tx: TenantTransactionClient, id: string): Promise<Person> {
     const person = await tx.person.findFirst({ where: { id, deletedAt: null } });

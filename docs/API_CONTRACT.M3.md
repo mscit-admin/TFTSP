@@ -53,6 +53,21 @@ Non-members request temporary view access; approval grants a **Viewer role with 
 3. Blocked fields **absent** from response JSON (not null).
 4. Temporary grant past `valid_to` → **401** with expiry message.
 
+## Notes for Admin-Web
+- **Settings shape** (`GET/PATCH /visibility-settings`): `{ tenantId, level, womenDisplay, showPhotos, showPhones,
+  showBirthDates, showDeceased, showMinors, showDocuments, defaultMemberScope, requireIdForViewRequest }`.
+  PATCH accepts any subset. In M3 the redactable Person fields are `photoKey` (showPhotos) and `birthDate`
+  (showBirthDates); `showPhones`/`showDocuments` are stored now and take effect when those fields ship (M4).
+- **Redaction behavior:** blocked fields are **absent** from person JSON (check with `'photoKey' in obj`, not
+  `=== null`). Out-of-scope / hidden persons are **absent from lists/tree** and **404** on detail — treat 404 as
+  "not visible", not necessarily "does not exist". Admins (tribe/deputy/branch) see full data.
+- **View-request review shape** (`ViewRequest`): `{ id, tenantId, fullName, phone, allegedBranch?, reason,
+  idAttachmentKey?, status, reviewedBy?, grantedUserId?, validTo?, createdAt }`. Public POST returns the pending
+  request; approve requires `{ validTo }` (ISO) and returns it `approved` with `grantedUserId` + `validTo`.
+  Admins are notified via `notification` type `view_request_submitted` (payload `{ viewRequestId, fullName }`).
+- **Expired grant:** a request after `valid_to` returns **401** with `messageKey: "errors.auth.grant_expired"` —
+  the client should route to a re-request / login screen.
+
 ## Out of M3 scope
 Advanced tree renders/exports/subscriptions/crowdsourcing (M4), mobile (M5). The resolver must be efficient
 enough to keep tree reads within the §9 latency targets, but perf tuning beyond correctness is M4.

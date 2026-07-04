@@ -26,7 +26,10 @@ export type Permission =
   | 'notification.read'
   | 'import.read'
   | 'import.create'
-  | 'import.rollback';
+  | 'import.rollback'
+  | 'visibilitySettings.read'
+  | 'visibilitySettings.update'
+  | 'viewRequest.manage';
 
 /** Reviewer/approver roles (Spec §3 M2). */
 export const M2_REVIEW_ROLES: Role[] = [Role.tribe_admin, Role.deputy_admin, Role.reviewer];
@@ -74,6 +77,10 @@ export const PERMISSION_MATRIX: Record<Permission, Role[]> = {
   'import.read': [Role.tribe_admin, Role.deputy_admin, Role.branch_admin],
   'import.create': [Role.tribe_admin, Role.deputy_admin, Role.branch_admin],
   'import.rollback': [Role.tribe_admin, Role.deputy_admin],
+  // Visibility policy + view-request review (M3): Tribe/Deputy Admin.
+  'visibilitySettings.read': [Role.tribe_admin, Role.deputy_admin],
+  'visibilitySettings.update': [Role.tribe_admin, Role.deputy_admin],
+  'viewRequest.manage': [Role.tribe_admin, Role.deputy_admin],
 };
 
 /**
