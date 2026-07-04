@@ -1,0 +1,44 @@
+{
+  "auth": {
+    "invalid_credentials": "Invalid email or password.",
+    "account_locked": "Account locked due to too many failed attempts. Try again later.",
+    "weak_password": "Password must be at least 12 characters.",
+    "invalid_refresh_token": "Invalid or expired refresh token.",
+    "refresh_token_reused": "Refresh token reuse detected. The session has been revoked.",
+    "no_tenant_membership": "This account has no membership in the requested tribe.",
+    "unauthorized": "Authentication required.",
+    "forbidden": "You do not have permission to perform this action."
+  },
+  "tenant": {
+    "not_found": "Tribe not found.",
+    "slug_taken": "This slug is already in use.",
+    "suspended": "This tribe is suspended."
+  },
+  "user": {
+    "email_taken": "This email is already registered."
+  },
+  "person": {
+    "not_found": "Person not found.",
+    "version_conflict": "The record was modified by someone else. Reload and try again.",
+    "duplicate_candidates": "Similar people already exist. Confirm to proceed.",
+    "father_must_be_male": "The father must be male.",
+    "mother_must_be_female": "The mother must be female.",
+    "self_ancestry": "This change would make a person their own ancestor.",
+    "parent_not_found": "The referenced parent does not exist."
+  },
+  "union": {
+    "not_found": "Union not found.",
+    "already_ended": "This union has already ended.",
+    "invalid_genders": "A union requires a male husband and a female wife."
+  },
+  "tribal_unit": {
+    "not_found": "Tribal unit not found."
+  },
+  "validation": {
+    "failed": "Validation failed."
+  },
+  "generic": {
+    "not_found": "Resource not found.",
+    "internal": "An unexpected error occurred."
+  }
+}
