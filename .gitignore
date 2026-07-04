@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+.angular/
+
+# Env
+.env
+.env.local
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Prisma
+apps/api/prisma/*.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/.flutter-plugins*
+
+# Test / coverage
+coverage/
+.nyc_output/
+test-results/
+playwright-report/

@@ -1,0 +1,19 @@
+{
+  "name": "tftsp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tribal & Family Tree SaaS Platform (multi-tenant)",
+  "workspaces": [
+    "apps/api",
+    "packages/shared-types"
+  ],
+  "scripts": {
+    "dev": "docker compose up",
+    "api:dev": "npm --workspace apps/api run start:dev",
+    "api:test": "npm --workspace apps/api run test",
+    "lint": "npm --workspace apps/api run lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
