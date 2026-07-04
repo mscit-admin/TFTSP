@@ -5,10 +5,31 @@ on:
     branches: ["**"]
   pull_request:
 
+# A new push to the same ref cancels an in-progress run (frees a hung/slow e2e).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   api:
     name: api (lint · build · test)
     runs-on: ubuntu-latest
+    # Redis is available for any BullMQ/queue module that connects at bootstrap.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      # e2e drives the maintenance service directly; the cron scheduler stays off in CI.
+      ENABLE_SCHEDULER: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,10 +52,11 @@ jobs:
       - name: Unit tests
         working-directory: apps/api
         run: npm run test:unit
-      - name: e2e tests (Testcontainers — isolation + lineage + auth gates)
+      - name: e2e tests (Testcontainers — isolation + lineage + auth + M2 gates)
         # Docker is available on ubuntu runners; Testcontainers spins up real PostgreSQL 16.
+        # --forceExit guards against a lingering Socket.IO/Prisma handle stalling the runner.
         working-directory: apps/api
-        run: npm run test:e2e
+        run: npm run test:e2e -- --forceExit
 
   admin-web:
     name: admin-web (build)
