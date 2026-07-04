@@ -9,3 +9,7 @@ export * from './auth';
 export * from './tenant';
 export * from './tree';
 export * from './roles';
+
+// M2
+export * from './change-request';
+export * from './notification';
