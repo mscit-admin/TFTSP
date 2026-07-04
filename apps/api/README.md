@@ -41,6 +41,8 @@ Key tests:
 - `test/isolation.e2e-spec.ts` — **mandatory** cross-tenant isolation (Spec §4.5).
 - `test/lineage.e2e-spec.ts` — cycle rejection + closure-table correctness.
 - `test/auth.e2e-spec.ts` — refresh-token reuse revokes the chain; account lockout.
+- `test/change-request.e2e-spec.ts` — M2 gates: conflict-not-applied, 2-approval quorum,
+  scheduled expiry sweep + owner notification, in-app notification on every state change.
 
 ## Architecture (M1)
 
@@ -58,8 +60,18 @@ Key tests:
 | i18n | `nestjs-i18n`, `src/i18n/{ar,en}` — all error messages are keys. |
 | Logging | `nestjs-pino` — structured JSON with `request_id` + `tenant_id`. |
 
+## Architecture (M2 — Change Requests, Approval Workflow, Notifications)
+
+| Concern | Where |
+|---|---|
+| Change requests | `modules/change-requests` — RFC-6902 JSON patch on person/union/tribal_unit; state machine `draft→submitted→under_review→approved\|rejected\|changes_requested→published` (+ `conflict`/`expired`); captures `baseVersion`. |
+| Auto-publish | `change-request.publisher.ts` — at approval quorum, applies the patch atomically (reusing M1 `*InTx` write paths + lineage), re-checking `baseVersion` → `published` or `conflict`. |
+| Workflow settings | `modules/workflow-settings` — per-tenant `approvalsRequired`(1..3)/`expiryDays`/`reviewerCanEdit` (GET/PATCH, audited). |
+| Notifications | `modules/notifications` — persistent entity + list/read/read-all; Socket.IO gateway `/notifications` (JWT handshake, room `t:<tenant>:u:<user>`, event `notification`); `NotificationChannel` abstraction with in-app + bilingual MJML email (MailHog). |
+| Scheduled jobs | `modules/jobs` — BullMQ expiry sweep (hourly) + expiring-soon warning (daily). Redis-free `ChangeRequestMaintenanceService` holds the logic; scheduler gated by `ENABLE_SCHEDULER`. |
+
 Architecture decisions specific to the backend are logged in the repo-root
-`DECISIONS.md` (D-101 … D-107).
+`DECISIONS.md` (D-101 … D-207).
 
 ## Module conventions
 

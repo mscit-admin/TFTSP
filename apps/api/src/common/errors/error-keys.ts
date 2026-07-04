@@ -38,6 +38,15 @@ export const ErrorKeys = {
   // tribal units
   TRIBAL_UNIT_NOT_FOUND: 'errors.tribal_unit.not_found',
 
+  // change requests (M2)
+  CHANGE_REQUEST_NOT_FOUND: 'errors.change_request.not_found',
+  CR_INVALID_STATE: 'errors.change_request.invalid_state',
+  CR_NOT_OWNER: 'errors.change_request.not_owner',
+  CR_CANNOT_REVIEW_OWN: 'errors.change_request.cannot_review_own',
+  CR_TARGET_REQUIRED: 'errors.change_request.target_required',
+  CR_INVALID_PATCH: 'errors.change_request.invalid_patch',
+  CR_ALREADY_REVIEWED: 'errors.change_request.already_reviewed',
+
   // generic
   VALIDATION_FAILED: 'errors.validation.failed',
   NOT_FOUND: 'errors.generic.not_found',

@@ -20,6 +20,15 @@ import { PlatformModule } from './modules/platform/platform.module';
 import { TenantSettingsModule } from './modules/tenant-settings/tenant-settings.module';
 import { TribalUnitsModule } from './modules/tribal-units/tribal-units.module';
 import { UnionsModule } from './modules/unions/unions.module';
+// M2
+import { ChangeRequestsModule } from './modules/change-requests/change-requests.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { WorkflowSettingsModule } from './modules/workflow-settings/workflow-settings.module';
+import { ChangeRequestMaintenanceModule } from './modules/jobs/change-request-maintenance.module';
+import { JobsModule } from './modules/jobs/jobs.module';
+
+// BullMQ scheduler needs Redis; disable in tests/CI-without-redis via ENABLE_SCHEDULER=false.
+const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
 
 @Module({
   imports: [
@@ -62,6 +71,12 @@ import { UnionsModule } from './modules/unions/unions.module';
     PersonsModule,
     UnionsModule,
     LineageModule,
+    // M2
+    WorkflowSettingsModule,
+    NotificationsModule,
+    ChangeRequestsModule,
+    ChangeRequestMaintenanceModule,
+    ...(schedulerEnabled ? [JobsModule] : []),
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

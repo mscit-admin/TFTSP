@@ -72,117 +72,132 @@ export class PersonsService {
   }
 
   async create(dto: CreatePersonDto): Promise<Person> {
-    const userId = this.tenantContext.userId;
+    return this.prisma.tenantTransaction((tx) => this.createInTx(tx, dto));
+  }
+
+  /**
+   * Create within an existing tenant transaction. Reused by the M1 direct-write
+   * path AND the M2 change-request publisher (so lineage/audit stay identical).
+   * `createdByOverride` lets the publisher attribute the record to the request author.
+   */
+  async createInTx(
+    tx: TenantTransactionClient,
+    dto: CreatePersonDto,
+    createdByOverride?: string,
+  ): Promise<Person> {
     const tenantId = this.tenantContext.requireTenantId();
     const fullName = buildFullName(dto);
 
-    return this.prisma.tenantTransaction(async (tx) => {
-      await this.validateParents(tx, dto.fatherId ?? null, dto.motherId ?? null);
+    await this.validateParents(tx, dto.fatherId ?? null, dto.motherId ?? null);
 
-      if (!dto.confirmDuplicate) {
-        const candidates = await this.findDuplicates(tx, fullName, dto.tribalUnitId ?? null);
-        if (candidates.length > 0) {
-          throw AppException.conflict(ErrorKeys.DUPLICATE_CANDIDATES, { candidates });
-        }
+    if (!dto.confirmDuplicate) {
+      const candidates = await this.findDuplicates(tx, fullName, dto.tribalUnitId ?? null);
+      if (candidates.length > 0) {
+        throw AppException.conflict(ErrorKeys.DUPLICATE_CANDIDATES, { candidates });
       }
+    }
 
-      const person = await this.repo.create(tx, {
-        tenantId,
-        fullName,
-        firstName: dto.firstName,
-        fatherName: dto.fatherName ?? null,
-        grandfatherName: dto.grandfatherName ?? null,
-        familyName: dto.familyName ?? null,
-        laqab: dto.laqab ?? null,
-        gender: dto.gender,
-        birthDate: parsePartialDate(dto.birthDate),
-        birthPlace: dto.birthPlace ?? null,
-        deathDate: parsePartialDate(dto.deathDate),
-        isDeceased: dto.isDeceased ?? false,
-        fatherId: dto.fatherId ?? null,
-        motherId: dto.motherId ?? null,
-        tribalUnitId: dto.tribalUnitId ?? null,
-        profession: dto.profession ?? null,
-        createdBy: userId ?? tenantId,
-      });
-
-      await this.lineage.onCreate(tx, person.id, person.fatherId);
-
-      await this.audit.recordTx(tx, {
-        action: 'person.create',
-        entityType: 'Person',
-        entityId: person.id,
-        after: person,
-        before: dto.confirmDuplicate ? { confirmDuplicate: true } : undefined,
-      });
-
-      return person;
+    const person = await this.repo.create(tx, {
+      tenantId,
+      fullName,
+      firstName: dto.firstName,
+      fatherName: dto.fatherName ?? null,
+      grandfatherName: dto.grandfatherName ?? null,
+      familyName: dto.familyName ?? null,
+      laqab: dto.laqab ?? null,
+      gender: dto.gender,
+      birthDate: parsePartialDate(dto.birthDate),
+      birthPlace: dto.birthPlace ?? null,
+      deathDate: parsePartialDate(dto.deathDate),
+      isDeceased: dto.isDeceased ?? false,
+      fatherId: dto.fatherId ?? null,
+      motherId: dto.motherId ?? null,
+      tribalUnitId: dto.tribalUnitId ?? null,
+      profession: dto.profession ?? null,
+      createdBy: createdByOverride ?? this.tenantContext.userId ?? tenantId,
     });
+
+    await this.lineage.onCreate(tx, person.id, person.fatherId);
+
+    await this.audit.recordTx(tx, {
+      action: 'person.create',
+      entityType: 'Person',
+      entityId: person.id,
+      after: person,
+    });
+
+    return person;
   }
 
   async update(id: string, dto: UpdatePersonDto): Promise<Person> {
-    return this.prisma.tenantTransaction(async (tx) => {
-      const before = await tx.person.findFirst({ where: { id, deletedAt: null } });
-      if (!before) {
-        throw AppException.notFound(ErrorKeys.PERSON_NOT_FOUND, { id });
-      }
+    return this.prisma.tenantTransaction((tx) => this.updateInTx(tx, id, dto));
+  }
 
-      const nextFatherId = dto.fatherId !== undefined ? (dto.fatherId ?? null) : before.fatherId;
-      const nextMotherId = dto.motherId !== undefined ? (dto.motherId ?? null) : before.motherId;
+  /** Update within an existing tenant transaction (shared by M1 + M2 publisher). */
+  async updateInTx(tx: TenantTransactionClient, id: string, dto: UpdatePersonDto): Promise<Person> {
+    const before = await tx.person.findFirst({ where: { id, deletedAt: null } });
+    if (!before) {
+      throw AppException.notFound(ErrorKeys.PERSON_NOT_FOUND, { id });
+    }
 
-      // Validate parents only for the ones actually changing.
-      await this.validateParents(
-        tx,
-        dto.fatherId !== undefined ? nextFatherId : null,
-        dto.motherId !== undefined ? nextMotherId : null,
-      );
-      if (dto.motherId !== undefined && nextMotherId === id) {
-        throw AppException.badRequest(ErrorKeys.SELF_ANCESTRY, { id });
-      }
+    const nextFatherId = dto.fatherId !== undefined ? (dto.fatherId ?? null) : before.fatherId;
+    const nextMotherId = dto.motherId !== undefined ? (dto.motherId ?? null) : before.motherId;
 
-      // Lineage change (cycle-checked) must happen in this same transaction.
-      const fatherChanged = dto.fatherId !== undefined && nextFatherId !== before.fatherId;
-      if (fatherChanged) {
-        await this.lineage.onFatherChange(tx, id, nextFatherId);
-      }
+    // Validate parents only for the ones actually changing.
+    await this.validateParents(
+      tx,
+      dto.fatherId !== undefined ? nextFatherId : null,
+      dto.motherId !== undefined ? nextMotherId : null,
+    );
+    if (dto.motherId !== undefined && nextMotherId === id) {
+      throw AppException.badRequest(ErrorKeys.SELF_ANCESTRY, { id });
+    }
 
-      const data = this.buildUpdateData(before, dto, nextFatherId, nextMotherId);
+    // Lineage change (cycle-checked) must happen in this same transaction.
+    const fatherChanged = dto.fatherId !== undefined && nextFatherId !== before.fatherId;
+    if (fatherChanged) {
+      await this.lineage.onFatherChange(tx, id, nextFatherId);
+    }
 
-      const affected = await this.repo.updateWithVersion(tx, id, dto.version, data);
-      if (affected === 0) {
-        throw AppException.conflict(ErrorKeys.VERSION_CONFLICT, {
-          expected: dto.version,
-          actual: before.version,
-        });
-      }
+    const data = this.buildUpdateData(before, dto, nextFatherId, nextMotherId);
 
-      const after = await tx.person.findFirst({ where: { id } });
-      await this.audit.recordTx(tx, {
-        action: 'person.update',
-        entityType: 'Person',
-        entityId: id,
-        before,
-        after,
+    const affected = await this.repo.updateWithVersion(tx, id, dto.version, data);
+    if (affected === 0) {
+      throw AppException.conflict(ErrorKeys.VERSION_CONFLICT, {
+        expected: dto.version,
+        actual: before.version,
       });
-      return after as Person;
+    }
+
+    const after = await tx.person.findFirst({ where: { id } });
+    await this.audit.recordTx(tx, {
+      action: 'person.update',
+      entityType: 'Person',
+      entityId: id,
+      before,
+      after,
     });
+    return after as Person;
   }
 
   async remove(id: string): Promise<void> {
-    await this.prisma.tenantTransaction(async (tx) => {
-      const before = await tx.person.findFirst({ where: { id, deletedAt: null } });
-      if (!before) {
-        throw AppException.notFound(ErrorKeys.PERSON_NOT_FOUND, { id });
-      }
-      await this.lineage.onSoftDelete(tx, id);
-      const after = await this.repo.softDelete(tx, id);
-      await this.audit.recordTx(tx, {
-        action: 'person.delete',
-        entityType: 'Person',
-        entityId: id,
-        before,
-        after,
-      });
+    await this.prisma.tenantTransaction((tx) => this.softDeleteInTx(tx, id));
+  }
+
+  /** Soft-delete within an existing tenant transaction (shared by M1 + M2 publisher). */
+  async softDeleteInTx(tx: TenantTransactionClient, id: string): Promise<void> {
+    const before = await tx.person.findFirst({ where: { id, deletedAt: null } });
+    if (!before) {
+      throw AppException.notFound(ErrorKeys.PERSON_NOT_FOUND, { id });
+    }
+    await this.lineage.onSoftDelete(tx, id);
+    const after = await this.repo.softDelete(tx, id);
+    await this.audit.recordTx(tx, {
+      action: 'person.delete',
+      entityType: 'Person',
+      entityId: id,
+      before,
+      after,
     });
   }
 

@@ -59,6 +59,49 @@ enum UnionStatus {
   widowed
 }
 
+// ---- M2: Change Requests, Approval Workflow, Notifications ----
+
+enum ChangeTargetType {
+  person
+  union
+  tribal_unit
+}
+
+enum ChangeOperation {
+  create
+  update
+  delete
+}
+
+enum ChangeRequestStatus {
+  draft
+  submitted
+  under_review
+  approved
+  rejected
+  changes_requested
+  published
+  conflict
+  expired
+}
+
+enum ReviewDecision {
+  approve
+  reject
+  request_changes
+}
+
+enum NotificationType {
+  change_request_submitted
+  change_request_approved
+  change_request_rejected
+  change_request_changes_requested
+  change_request_published
+  change_request_expiring
+  change_request_expired
+  change_request_conflict
+}
+
 // ---------------------------------------------------------------------------
 // Platform-level tables (OUTSIDE RLS) — Spec Section 4.4
 // ---------------------------------------------------------------------------
@@ -74,11 +117,14 @@ model Tenant {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  roleAssignments RoleAssignment[]
-  persons         Person[]
-  unions          Union[]
-  tribalUnits     TribalUnit[]
-  auditLogs       AuditLog[]
+  roleAssignments  RoleAssignment[]
+  persons          Person[]
+  unions           Union[]
+  tribalUnits      TribalUnit[]
+  auditLogs        AuditLog[]
+  changeRequests   ChangeRequest[]
+  notifications    Notification[]
+  workflowSettings WorkflowSettings?
 
   @@map("tenants")
 }
@@ -280,4 +326,79 @@ model AuditLog {
   @@index([tenantId, entityType, entityId])
   @@index([tenantId, createdAt])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// M2 tenant-scoped tables (UNDER RLS) — Spec §3 M2
+// ---------------------------------------------------------------------------
+
+// One row per tenant. Approval workflow configuration.
+model WorkflowSettings {
+  tenantId          String   @id @map("tenant_id") @db.Uuid
+  approvalsRequired Int      @default(1) @map("approvals_required")
+  expiryDays        Int      @default(30) @map("expiry_days")
+  reviewerCanEdit   Boolean  @default(false) @map("reviewer_can_edit")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_settings")
+}
+
+model ChangeRequest {
+  id          String              @id @default(uuid()) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  targetType  ChangeTargetType    @map("target_type")
+  targetId    String?             @map("target_id") @db.Uuid
+  operation   ChangeOperation
+  patch       Json
+  status      ChangeRequestStatus @default(draft)
+  baseVersion Int?                @map("base_version")
+  createdBy   String              @map("created_by") @db.Uuid
+  expiresAt   DateTime            @map("expires_at")
+  publishedAt DateTime?           @map("published_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  tenant  Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reviews ChangeRequestReview[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdBy])
+  @@index([tenantId, expiresAt])
+  @@map("change_requests")
+}
+
+model ChangeRequestReview {
+  id              String         @id @default(uuid()) @db.Uuid
+  tenantId        String         @map("tenant_id") @db.Uuid
+  changeRequestId String         @map("change_request_id") @db.Uuid
+  reviewerId      String         @map("reviewer_id") @db.Uuid
+  decision        ReviewDecision
+  comment         String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  changeRequest ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+
+  // Each reviewer counts once per request (Spec §3 M2).
+  @@unique([changeRequestId, reviewerId])
+  @@index([tenantId, changeRequestId])
+  @@map("change_request_reviews")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, readAt])
+  @@index([tenantId, userId, createdAt])
+  @@map("notifications")
 }

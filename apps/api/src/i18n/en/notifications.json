@@ -1,0 +1,34 @@
+{
+  "change_request_submitted": {
+    "subject": "New change request",
+    "body": "A new change request has been submitted and is awaiting your review."
+  },
+  "change_request_approved": {
+    "subject": "Change request approved",
+    "body": "Your change request has been approved."
+  },
+  "change_request_rejected": {
+    "subject": "Change request rejected",
+    "body": "Your change request has been rejected."
+  },
+  "change_request_changes_requested": {
+    "subject": "Changes requested",
+    "body": "A reviewer requested changes on your request. Please edit and resubmit."
+  },
+  "change_request_published": {
+    "subject": "Change request published",
+    "body": "Your change request has been approved and published to the tree."
+  },
+  "change_request_expiring": {
+    "subject": "Change request expiring soon",
+    "body": "Your change request will expire soon. Please act before it closes."
+  },
+  "change_request_expired": {
+    "subject": "Change request expired",
+    "body": "Your change request has expired and was closed automatically."
+  },
+  "change_request_conflict": {
+    "subject": "Change request conflict",
+    "body": "The target was modified after your request was created, so it could not be applied. Please re-draft."
+  }
+}

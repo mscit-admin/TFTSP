@@ -44,6 +44,10 @@ export async function bootstrapTestApp(): Promise<TestContext> {
   process.env.JWT_ACCESS_SECRET = 'test-access-secret';
   process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
   process.env.NODE_ENV = 'test';
+  // No Redis in tests — the BullMQ scheduler is skipped; the maintenance service
+  // (which the M2 e2e drives directly) is always available.
+  process.env.ENABLE_SCHEDULER = 'false';
+  process.env.SMTP_HOST = process.env.SMTP_HOST ?? '127.0.0.1';
 
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication();

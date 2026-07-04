@@ -6,6 +6,6 @@ import { TribalUnitsService } from './tribal-units.service';
 @Module({
   controllers: [TribalUnitsController],
   providers: [TribalUnitsService, TribalUnitsRepository],
-  exports: [TribalUnitsService],
+  exports: [TribalUnitsService, TribalUnitsRepository],
 })
 export class TribalUnitsModule {}

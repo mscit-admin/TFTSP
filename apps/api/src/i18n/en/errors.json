@@ -34,6 +34,15 @@
   "tribal_unit": {
     "not_found": "Tribal unit not found."
   },
+  "change_request": {
+    "not_found": "Change request not found.",
+    "invalid_state": "This action is not allowed in the request's current state.",
+    "not_owner": "Only the request owner can perform this action.",
+    "cannot_review_own": "You cannot review your own change request.",
+    "target_required": "A target is required for update/delete operations.",
+    "invalid_patch": "The JSON patch is malformed.",
+    "already_reviewed": "You have already reviewed this request."
+  },
   "validation": {
     "failed": "Validation failed."
   },

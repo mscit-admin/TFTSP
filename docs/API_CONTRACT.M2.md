@@ -44,7 +44,12 @@
 | POST | `/api/v1/notifications/read-all` | mark all read |
 
 - **In-app:** Socket.IO gateway, namespace `/notifications`, JWT-authed, joins a **tenant+user room**;
-  emits event `notification` (payload = `Notification`) within ≤2s of any request state change.
+  emits event `notification` (payload = full `Notification` row) within ≤2s of any request state change.
+  - **Handshake:** connect to `io('<baseHost>/notifications', { auth: { token: <accessJWT> } })`. The
+    access JWT may alternatively be sent as `Authorization: Bearer` or `?token=`. Invalid/absent token or
+    a token with no active tenant ⇒ the socket is disconnected. Room = `t:<tenantId>:u:<userId>` (server-derived).
+  - **Payload fields:** `{ id, tenantId, userId, type, payload, readAt, createdAt }`. `payload` for
+    change-request events is `{ changeRequestId, targetType, operation }`.
 - **Email:** bilingual (ar/en) **MJML** templates via the `NotificationChannel` abstraction, delivered
   through MailHog in dev. Triggers: new request, approval, rejection, changes-requested, expiry-approaching.
 

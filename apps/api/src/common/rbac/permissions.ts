@@ -17,7 +17,16 @@ export type Permission =
   | 'tree.read'
   | 'audit.read'
   | 'tenant.read'
-  | 'tenant.update';
+  | 'tenant.update'
+  | 'changeRequest.create'
+  | 'changeRequest.read'
+  | 'changeRequest.review'
+  | 'workflowSettings.read'
+  | 'workflowSettings.update'
+  | 'notification.read';
+
+/** Reviewer/approver roles (Spec §3 M2). */
+export const M2_REVIEW_ROLES: Role[] = [Role.tribe_admin, Role.deputy_admin, Role.reviewer];
 
 /** Roles allowed to write persons/unions directly in M1 (approval workflow = M2). */
 export const M1_WRITE_ROLES: Role[] = [Role.tribe_admin, Role.deputy_admin, Role.branch_admin];
@@ -45,6 +54,19 @@ export const PERMISSION_MATRIX: Record<Permission, Role[]> = {
   // Tribe settings (logo/colors/names) — administrative, own tenant only.
   'tenant.read': [Role.tribe_admin, Role.deputy_admin],
   'tenant.update': [Role.tribe_admin, Role.deputy_admin],
+  // Change requests (M2): non-admins route edits through these; admins may too.
+  'changeRequest.create': [
+    Role.tribe_admin,
+    Role.deputy_admin,
+    Role.branch_admin,
+    Role.reviewer,
+    Role.contributor,
+  ],
+  'changeRequest.read': READ_ROLES,
+  'changeRequest.review': [Role.tribe_admin, Role.deputy_admin, Role.reviewer],
+  'workflowSettings.read': [Role.tribe_admin, Role.deputy_admin],
+  'workflowSettings.update': [Role.tribe_admin, Role.deputy_admin],
+  'notification.read': READ_ROLES,
 };
 
 /**
