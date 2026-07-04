@@ -16,3 +16,6 @@ export * from './notification';
 
 // M2.5
 export * from './import';
+
+// M3
+export * from './visibility';
