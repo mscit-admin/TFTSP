@@ -129,6 +129,10 @@ export class ShellComponent {
       items.push({ route: '/change-requests', labelKey: 'nav.reviewQueue', icon: 'pi-inbox' });
     }
     items.push({ route: '/my-requests', labelKey: 'nav.myRequests', icon: 'pi-file-edit' });
+    // Bulk import is an admin write action (Tribe Admin / Deputy / Branch Admin).
+    if (this.auth.canWrite()) {
+      items.push({ route: '/imports', labelKey: 'nav.imports', icon: 'pi-upload' });
+    }
     items.push({ route: '/settings', labelKey: 'nav.settings', icon: 'pi-cog' });
     if (this.auth.isTribeAdmin()) {
       items.push({ route: '/workflow-settings', labelKey: 'nav.workflow', icon: 'pi-sliders-h' });

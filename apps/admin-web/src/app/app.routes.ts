@@ -70,6 +70,23 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'imports',
+        loadComponent: () =>
+          import('./features/imports/imports-list.component').then((m) => m.ImportsListComponent),
+      },
+      {
+        path: 'imports/new',
+        loadComponent: () =>
+          import('./features/imports/import-wizard.component').then((m) => m.ImportWizardComponent),
+      },
+      {
+        path: 'imports/:id',
+        loadComponent: () =>
+          import('./features/imports/import-batch-detail.component').then(
+            (m) => m.ImportBatchDetailComponent,
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/tribe-settings.component').then(

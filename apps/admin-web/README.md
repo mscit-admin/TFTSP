@@ -61,6 +61,21 @@ npm run build       # outputs to dist/admin-web
   handshake `auth`, same-origin via the `/socket.io` ws proxy). The authenticated shell opens it
   on entry and closes it on logout; incoming `notification` events update the bell and raise a toast.
 
+### M2.5 — Bulk Import
+
+| Area | Route | Notes |
+|---|---|---|
+| Import wizard | `/imports/new` | template download (`?format=&lang=`), 50 MB upload (`POST /imports`), **live progress** over the `/imports` socket, preview, submit |
+| Preview | (in wizard & detail) | stats, all-at-once errors table (row + column + message), per-row decisions for duplicate/ambiguous rows (`PATCH /imports/:id/rows/:rowId`) |
+| Batches list | `/imports` | `GET /imports` with counts + status badges |
+| Batch detail | `/imports/:id` | counts, link to the batch's Change Request, **rollback** (Tribe Admin) with blocking-dependency message on refusal |
+
+- **One Change Request:** submitting (`POST /imports/:id/submit` with `{ partial }`) sends the whole
+  batch into the M2 approval workflow as a single change request; "import only valid rows" is offered
+  when errors exist. The wizard links to the returned CR via the M2 review UI.
+- **Socket.IO:** the `/imports` namespace is handled entirely by `ImportService` (same handshake as
+  notifications); `import_progress` events drive the progress bar through parse/validate/resolve.
+
 ### Auth flow
 
 - `AuthService` holds session state as Signals; tokens live in `TokenStorageService`
@@ -82,11 +97,11 @@ npm run build       # outputs to dist/admin-web
 Components never call `HttpClient` (or the socket) directly. `ApiService` is the only HTTP
 surface; typed resource services (`PersonService`, `TribalUnitService`, `UnionService`,
 `TreeService`, `TenantSettingsService`, `AuthService`, plus M2's `ChangeRequestService`,
-`WorkflowSettingsService`, `NotificationService`) sit on top of it. All Socket.IO wiring is
-confined to `NotificationService`.
+`WorkflowSettingsService`, `NotificationService`, and M2.5's `ImportService`) sit on top of it.
+All Socket.IO wiring is confined to `NotificationService` (`/notifications`) and `ImportService`
+(`/imports`).
 
 ## Deliberately out of scope (current)
 
-Bulk import (M2.5), visibility/privacy settings (M3), exports/subscriptions/crowdsourcing (M4),
-mobile (M5), and the rich d3/canvas tree renderer. See root `DECISIONS.md` (`D-2xx`) for the
-choices made.
+Visibility/privacy settings (M3), exports/subscriptions/crowdsourcing (M4), mobile (M5), and the
+rich d3/canvas tree renderer. See root `DECISIONS.md` (`D-2xx`) for the choices made.
