@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Gender, Person, Prisma } from '@prisma/client';
 import { AppException } from '../../common/errors/app.exception';
@@ -30,6 +30,7 @@ export interface PaginatedPersons {
 
 @Injectable()
 export class PersonsService {
+  private readonly logger = new Logger(PersonsService.name);
   private readonly duplicateThreshold: number;
 
   constructor(
@@ -56,14 +57,26 @@ export class PersonsService {
 
     if (dto.q && dto.q.trim().length > 0) {
       const q = dto.q.trim();
-      const [idRows, count] = await Promise.all([
-        this.repo.searchIds(q, skip, dto.pageSize),
-        this.repo.countSearch(q),
-      ]);
-      const persons = await this.repo.loadByIds(idRows.map((r) => r.id));
+      // Sequential (not Promise.all): avoid two concurrent tenant transactions on
+      // this core read path so RLS context handling stays deterministic.
+      const idRows = await this.repo.searchIds(q, skip, dto.pageSize);
+      const count = await this.repo.countSearch(q);
+
+      // Defensive: a falsy/invalid id must never reach loadByIds (uuid cast, else
+      // 22P02). If it ever does, log it — never silently swallow a real bug.
+      const ids = idRows
+        .map((r) => r.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      if (ids.length !== idRows.length) {
+        this.logger.warn(
+          `searchIds returned ${idRows.length - ids.length} invalid id(s) for q="${q}"; filtered before load`,
+        );
+      }
+
+      const persons = await this.repo.loadByIds(ids);
       const byId = new Map(persons.map((p) => [p.id, p]));
       // Preserve trigram ranking order; keep only fully-loaded Person rows.
-      raw = idRows.map((r) => byId.get(r.id)).filter((p): p is Person => p !== undefined);
+      raw = ids.map((id) => byId.get(id)).filter((p): p is Person => p !== undefined);
       total = count;
     } else {
       const where: Prisma.PersonWhereInput = { deletedAt: null };

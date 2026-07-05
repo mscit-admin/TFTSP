@@ -12,9 +12,14 @@ export interface TenantStore {
   isSuperAdmin: boolean;
   requestId?: string;
   ip?: string;
-  /** true while inside an explicit tenant transaction so the Prisma extension
-   *  does not re-wrap (which would open an illegal nested transaction). */
-  inTenantTx: boolean;
+  /**
+   * Depth of active explicit tenant transactions. The Prisma extension re-wraps
+   * a model op in its own `SET LOCAL app.current_tenant` transaction ONLY when
+   * this is 0. A COUNTER (not a boolean save/restore) is used so concurrent
+   * tenant transactions in the same request (e.g. Promise.all) can't corrupt it:
+   * enter increments, exit decrements, always returning to 0 when all finish.
+   */
+  txDepth: number;
 }
 
 const storage = new AsyncLocalStorage<TenantStore>();

@@ -21,7 +21,7 @@ export function applyTenantExtension(base: PrismaClient, tenantContext: TenantCo
 
           // No tenant bound (platform/auth plane) or already inside a tenant
           // transaction that set the GUC: run the query as-is.
-          if (!tenantId || store?.inTenantTx) {
+          if (!tenantId || (store?.txDepth ?? 0) > 0) {
             return query(args);
           }
 

@@ -121,6 +121,34 @@ describe('M3 Visibility & Privacy (Spec §3·M3)', () => {
     );
   });
 
+  it('search returns results and is stable under repeated runs (no 500 / uuid 22P02)', async () => {
+    await setSettings({
+      level: 'members',
+      womenDisplay: 'with_siblings',
+      defaultMemberScope: 'tribe',
+    });
+    // Seed a couple of matchable people, then hammer the search path.
+    await seedPerson(ctx.owner, tenantId, { firstName: 'سعيد الباحث', gender: Gender.male });
+    await seedPerson(ctx.owner, tenantId, { firstName: 'سعيد الثاني', gender: Gender.male });
+    await createMember(ctx.owner, tenantId, 'searcher@vis.local', {
+      role: Role.viewer,
+      memberScope: 'tribe',
+    });
+    const token = (await login(ctx.app, 'searcher@vis.local', 'vis')).accessToken;
+
+    for (let i = 0; i < 5; i += 1) {
+      // Interleave search with a plain list to reproduce the old concurrent-tx race.
+      const [search, list] = await Promise.all([
+        request(server()).get('/api/v1/persons?q=%D8%B3%D8%B9%D9%8A%D8%AF').set(auth(token)), // "سعيد"
+        request(server()).get('/api/v1/persons').set(auth(token)),
+      ]);
+      expect(search.status).toBe(200);
+      expect(list.status).toBe(200);
+      expect(Array.isArray(search.body.data)).toBe(true);
+      expect(search.body.data.length).toBeGreaterThan(0);
+    }
+  }, 30_000);
+
   it('gate 3 — blocked fields are ABSENT from the JSON (not null)', async () => {
     await setSettings({
       level: 'members',
