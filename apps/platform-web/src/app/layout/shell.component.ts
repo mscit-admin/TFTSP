@@ -42,6 +42,13 @@ import { LanguageService } from '../core/services/language.service';
           >
             <i class="pi pi-sitemap me-1"></i>{{ 'nav.tenants' | translate }}
           </a>
+          <a
+            routerLink="/statistics"
+            routerLinkActive="bg-slate-800 text-white"
+            class="px-3 py-1.5 rounded-md text-sm text-slate-300 hover:bg-slate-800/70"
+          >
+            <i class="pi pi-chart-pie me-1"></i>{{ 'nav.statistics' | translate }}
+          </a>
         </nav>
 
         <div class="ms-auto flex items-center gap-3">

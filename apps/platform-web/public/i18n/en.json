@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "tenants": "Tribes",
+    "statistics": "Statistics",
     "logout": "Sign out"
   },
   "lang": {
@@ -17,7 +18,14 @@
     "save": "Create",
     "saving": "Saving…",
     "done": "Done",
-    "error": "Error"
+    "error": "Error",
+    "none": "None"
+  },
+  "plan": {
+    "free": "Free",
+    "basic": "Basic",
+    "professional": "Professional",
+    "enterprise": "Enterprise"
   },
   "errors": {
     "loadFailed": "Could not load data. Please try again.",
@@ -90,6 +98,63 @@
     "errors": {
       "slugTaken": "That slug is already in use.",
       "createFailed": "Could not create the tribe. Please review the fields."
+    }
+  },
+  "subscription": {
+    "manage": "Subscription",
+    "expired": "Expired {{days}}d ago",
+    "expiresInDays": "Expires in {{days}}d",
+    "dialog": {
+      "title": "Subscription management"
+    },
+    "current": {
+      "title": "Current subscription"
+    },
+    "field": {
+      "tier": "Plan",
+      "status": "Status",
+      "activatedAt": "Activated",
+      "expiresAt": "Expires",
+      "note": "Note",
+      "notePlaceholder": "Bank-transfer reference…"
+    },
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "suspended": "Suspended"
+    },
+    "assign": {
+      "title": "Assign / activate plan",
+      "submit": "Activate plan",
+      "manualHint": "Activation is manual (bank transfer) in v1. Record the transfer reference in the note."
+    },
+    "log": {
+      "title": "Activation log",
+      "date": "Date",
+      "by": "Activated by",
+      "empty": "No activations recorded yet."
+    },
+    "toast": {
+      "saved": "Subscription updated."
+    },
+    "errors": {
+      "saveFailed": "Could not update the subscription. Please try again."
+    }
+  },
+  "statistics": {
+    "title": "Platform statistics",
+    "subtitle": "Live overview across all tribes",
+    "refreshedAt": "refreshed",
+    "byPlan": "Tribes by plan",
+    "expiringSoon": "Expiring within 30 days",
+    "noData": "No data available.",
+    "noneExpiring": "No subscriptions expiring soon.",
+    "kpi": {
+      "tribes": "Tribes",
+      "active": "Active",
+      "suspended": "Suspended",
+      "persons": "Persons",
+      "users": "Users"
     }
   }
 }

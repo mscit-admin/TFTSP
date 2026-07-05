@@ -30,6 +30,13 @@ export const routes: Routes = [
             (m) => m.TenantsListComponent,
           ),
       },
+      {
+        path: 'statistics',
+        loadComponent: () =>
+          import('./features/dashboard/platform-dashboard.component').then(
+            (m) => m.PlatformDashboardComponent,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
