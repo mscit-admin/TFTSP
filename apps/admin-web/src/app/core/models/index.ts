@@ -9,3 +9,4 @@ export * from './common';
 export * from './change-request';
 export * from './notification';
 export * from './import';
+export * from './visibility';

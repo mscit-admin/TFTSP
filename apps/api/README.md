@@ -81,8 +81,18 @@ Key tests:
 | Rollback | `POST /imports/:id/rollback` — refused if later records depend; else soft-delete + `LineageService.rebuildClosure` + audit `import_rollback`. |
 | Progress WS | `import.gateway.ts` — namespace `/imports`, event `import_progress`. |
 
+## Architecture (M3 — Visibility & Privacy)
+
+| Concern | Where |
+|---|---|
+| Visibility Resolver | `modules/visibility/visibility.resolver.ts` — THE central gate every person read passes. Existence policies remove a person (→ 404 / absent); field policies DELETE keys (never null). Injected into `PersonsService` (list/search/findOne) + `LineageService` (tree/ancestors/descendants). |
+| Visibility settings | `visibility-settings.*` — per-tenant `level` + field policies + `defaultMemberScope` + `requireIdForViewRequest` (GET/PATCH, audited, lazy defaults). |
+| Member scope | `role_assignments.member_scope` + `anchor_person_id`; clan/branch via tribal-unit subtree, direct via closure (ancestors+siblings+children). |
+| View requests | `modules/view-requests` — public `POST /view-requests` (owner client, tenant via slug) notifies admins; Tribe Admin list/approve/reject. Approve creates a Viewer user + `role_assignments` row with mandatory `valid_to`. |
+| Grant expiry | `PolicyGuard` → 401 `errors.auth.grant_expired` when the only assignment(s) have lapsed. |
+
 Architecture decisions specific to the backend are logged in the repo-root
-`DECISIONS.md` (D-101 … D-307).
+`DECISIONS.md` (D-101 … D-314).
 
 ## Module conventions
 

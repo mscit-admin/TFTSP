@@ -8,6 +8,21 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
+  // Public, unauthenticated tree-view request form (outside the shell/guards).
+  {
+    path: 'request-view',
+    loadComponent: () =>
+      import('./features/view-requests/public-view-request.component').then(
+        (m) => m.PublicViewRequestComponent,
+      ),
+  },
+  {
+    path: 't/:tenantSlug/request-view',
+    loadComponent: () =>
+      import('./features/view-requests/public-view-request.component').then(
+        (m) => m.PublicViewRequestComponent,
+      ),
+  },
   {
     path: '',
     canActivate: [authGuard],
@@ -67,6 +82,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/workflow-settings/workflow-settings.component').then(
             (m) => m.WorkflowSettingsComponent,
+          ),
+      },
+      {
+        path: 'visibility-settings',
+        loadComponent: () =>
+          import('./features/visibility/visibility-settings.component').then(
+            (m) => m.VisibilitySettingsComponent,
+          ),
+      },
+      {
+        path: 'view-requests',
+        loadComponent: () =>
+          import('./features/view-requests/view-requests.component').then(
+            (m) => m.ViewRequestsComponent,
           ),
       },
       {

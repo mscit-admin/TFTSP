@@ -81,6 +81,13 @@ export class PolicyGuard implements CanActivate {
       },
     });
 
+    if (assignments.length === 0) {
+      // A temporary grant (e.g. a view-request Viewer) that has passed valid_to
+      // ⇒ 401 with an expiry message (Spec §3·M3 gate 4), distinct from 403.
+      await this.throwIfExpiredGrant(user.tenantId, user.id, now);
+      throw AppException.forbidden(ErrorKeys.FORBIDDEN);
+    }
+
     const allowedRoles = PERMISSION_MATRIX[requirement.permission];
     const matching = assignments.filter((a) => allowedRoles.includes(a.role));
     if (matching.length === 0) {
@@ -95,6 +102,18 @@ export class PolicyGuard implements CanActivate {
     }
 
     return true;
+  }
+
+  /** 401 with an expiry message when the user's only assignment(s) have lapsed. */
+  private async throwIfExpiredGrant(tenantId: string, userId: string, now: Date): Promise<void> {
+    const expired = await this.prisma.platform.roleAssignment.findFirst({
+      where: { tenantId, userId, validTo: { lt: now } },
+    });
+    if (expired) {
+      throw AppException.unauthorized(ErrorKeys.GRANT_EXPIRED, {
+        expiredAt: expired.validTo?.toISOString(),
+      });
+    }
   }
 
   /**

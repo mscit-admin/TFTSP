@@ -195,9 +195,10 @@ export class TreeViewComponent {
       const y = PAD + posY.get(n.id)! * ROW;
       return {
         id: n.id,
-        name: n.name,
-        gender: n.gender,
-        isDeceased: n.isDeceased,
+        // Redaction (M3) may drop display fields; tolerate absent name/gender.
+        name: n.name ?? '',
+        gender: n.gender ?? 'male',
+        isDeceased: n.isDeceased ?? false,
         x,
         y,
       };

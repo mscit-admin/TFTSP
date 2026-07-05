@@ -85,7 +85,7 @@ import type { Person } from '../../core/models';
                 <span class="text-gray-400"> ({{ p.laqab }})</span>
               }
             </td>
-            <td>{{ 'persons.genderValue.' + p.gender | translate }}</td>
+            <td>{{ p.gender ? ('persons.genderValue.' + p.gender | translate) : '—' }}</td>
             <td [attr.dir]="'ltr'" class="text-start">{{ p.birthDate || '—' }}</td>
             <td>
               <p-tag

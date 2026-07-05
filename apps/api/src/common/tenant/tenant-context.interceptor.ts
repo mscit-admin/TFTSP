@@ -25,7 +25,7 @@ export class TenantContextInterceptor implements NestInterceptor {
       isSuperAdmin: user?.isSuperAdmin ?? false,
       requestId: request.id ?? request.headers?.['x-request-id'],
       ip: request.ip ?? request.socket?.remoteAddress,
-      inTenantTx: false,
+      txDepth: 0,
     };
 
     // Await the handler inside run() so the ALS context stays active across the

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Gender, Person, Prisma } from '@prisma/client';
 import { AppException } from '../../common/errors/app.exception';
@@ -10,6 +10,7 @@ import { buildFullName } from '../../common/util/arabic';
 import { parsePartialDate } from '../../common/util/dates';
 import { AuditService } from '../audit/audit.service';
 import { LineageService } from '../lineage/lineage.service';
+import { VisibilityResolver } from '../visibility/visibility.resolver';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { ListPersonsDto } from './dto/list-persons.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
@@ -29,6 +30,7 @@ export interface PaginatedPersons {
 
 @Injectable()
 export class PersonsService {
+  private readonly logger = new Logger(PersonsService.name);
   private readonly duplicateThreshold: number;
 
   constructor(
@@ -37,6 +39,7 @@ export class PersonsService {
     private readonly audit: AuditService,
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    private readonly visibility: VisibilityResolver,
     config: ConfigService,
   ) {
     this.duplicateThreshold = config.get<number>('duplicateSimilarityThreshold') ?? 0.6;
@@ -44,28 +47,61 @@ export class PersonsService {
 
   async list(dto: ListPersonsDto): Promise<PaginatedPersons> {
     const skip = (dto.page - 1) * dto.pageSize;
+    const ctx = await this.visibility.buildContext();
+
+    // Fetch the raw page (full Person rows — the resolver needs gender/etc.),
+    // identically for search and plain list; the ONLY return point below applies
+    // the Visibility Resolver so no branch can ever skip it (Spec §3·M3.1).
+    let raw: Person[];
+    let total: number;
+
     if (dto.q && dto.q.trim().length > 0) {
-      const [idRows, total] = await Promise.all([
-        this.repo.searchIds(dto.q.trim(), skip, dto.pageSize),
-        this.repo.countSearch(dto.q.trim()),
-      ]);
-      const persons = await this.repo.loadByIds(idRows.map((r) => r.id));
+      const q = dto.q.trim();
+      // Sequential (not Promise.all): avoid two concurrent tenant transactions on
+      // this core read path so RLS context handling stays deterministic.
+      const idRows = await this.repo.searchIds(q, skip, dto.pageSize);
+      const count = await this.repo.countSearch(q);
+
+      // Defensive: a falsy/invalid id must never reach loadByIds (uuid cast, else
+      // 22P02). If it ever does, log it — never silently swallow a real bug.
+      const ids = idRows
+        .map((r) => r.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      if (ids.length !== idRows.length) {
+        this.logger.warn(
+          `searchIds returned ${idRows.length - ids.length} invalid id(s) for q="${q}"; filtered before load`,
+        );
+      }
+
+      const persons = await this.repo.loadByIds(ids);
       const byId = new Map(persons.map((p) => [p.id, p]));
-      const ordered = idRows.map((r) => byId.get(r.id)).filter((p): p is Person => p !== undefined);
-      return { data: ordered, page: dto.page, pageSize: dto.pageSize, total };
+      // Preserve trigram ranking order; keep only fully-loaded Person rows.
+      raw = ids.map((id) => byId.get(id)).filter((p): p is Person => p !== undefined);
+      total = count;
+    } else {
+      const where: Prisma.PersonWhereInput = { deletedAt: null };
+      const [data, count] = await Promise.all([
+        this.repo.findMany(where, skip, dto.pageSize),
+        this.repo.count(where),
+      ]);
+      raw = data;
+      total = count;
     }
 
-    const where: Prisma.PersonWhereInput = { deletedAt: null };
-    const [data, total] = await Promise.all([
-      this.repo.findMany(where, skip, dto.pageSize),
-      this.repo.count(where),
-    ]);
-    return { data, page: dto.page, pageSize: dto.pageSize, total };
+    // Single, unavoidable visibility choke point for BOTH paths.
+    return {
+      data: this.visibility.filterPersons(ctx, raw),
+      page: dto.page,
+      pageSize: dto.pageSize,
+      total,
+    };
   }
 
   async findOne(id: string): Promise<Person> {
-    const person = await this.repo.findById(id);
+    const ctx = await this.visibility.buildContext();
+    const person = this.visibility.resolveOne(ctx, await this.repo.findById(id));
     if (!person) {
+      // 404 (not 403) so existence outside the viewer's scope is not leaked.
       throw AppException.notFound(ErrorKeys.PERSON_NOT_FOUND, { id });
     }
     return person;

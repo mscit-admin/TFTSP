@@ -76,6 +76,21 @@ npm run build       # outputs to dist/admin-web
 - **Socket.IO:** the `/imports` namespace is handled entirely by `ImportService` (same handshake as
   notifications); `import_progress` events drive the progress bar through parse/validate/resolve.
 
+### M3 — Visibility & Privacy
+
+| Area | Route | Notes |
+|---|---|---|
+| Visibility settings | `/visibility-settings` | Tribe Admin — `level`, `womenDisplay`, `defaultMemberScope`, field toggles (photos/phones/birthDates/deceased/minors/documents), `requireIdForViewRequest`, each with bilingual helper text |
+| View-request review | `/view-requests` | Tribe Admin — `GET /view-requests?status=`, approve with a **mandatory, non-past** expiry date, reject; pending count shows as a nav badge |
+| Public request form | `/request-view`, `/t/:tenantSlug/request-view` | **unauthenticated**, outside the shell — `POST /view-requests` `{ tenantSlug, fullName, phone, allegedBranch?, reason, idAttachmentKey? }`, optional ID upload |
+
+- **Public route:** guard-free and shell-free; the public POST uses the interceptor's `SKIP_AUTH`
+  context so no bearer/refresh runs. The optional ID upload is a two-step handoff
+  (`POST /view-requests/id-attachment` → key, then create) — always optional in the UI; the backend
+  enforces `requireIdForViewRequest`.
+- **Redaction tolerance:** person responses now omit blocked fields entirely (not null); the persons
+  list, person form, and tree view coalesce absent `gender`/`name`/`isDeceased`/etc. so nothing crashes.
+
 ### Auth flow
 
 - `AuthService` holds session state as Signals; tokens live in `TokenStorageService`
@@ -97,11 +112,11 @@ npm run build       # outputs to dist/admin-web
 Components never call `HttpClient` (or the socket) directly. `ApiService` is the only HTTP
 surface; typed resource services (`PersonService`, `TribalUnitService`, `UnionService`,
 `TreeService`, `TenantSettingsService`, `AuthService`, plus M2's `ChangeRequestService`,
-`WorkflowSettingsService`, `NotificationService`, and M2.5's `ImportService`) sit on top of it.
-All Socket.IO wiring is confined to `NotificationService` (`/notifications`) and `ImportService`
-(`/imports`).
+`WorkflowSettingsService`, `NotificationService`, M2.5's `ImportService`, and M3's
+`VisibilityService` + `ViewRequestService`) sit on top of it. All Socket.IO wiring is confined to
+`NotificationService` (`/notifications`) and `ImportService` (`/imports`).
 
 ## Deliberately out of scope (current)
 
-Visibility/privacy settings (M3), exports/subscriptions/crowdsourcing (M4), mobile (M5), and the
-rich d3/canvas tree renderer. See root `DECISIONS.md` (`D-2xx`) for the choices made.
+Exports/subscriptions/crowdsourcing (M4), mobile (M5), and the rich d3/canvas tree renderer.
+See root `DECISIONS.md` (`D-2xx`) for the choices made.

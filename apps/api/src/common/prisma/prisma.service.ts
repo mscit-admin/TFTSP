@@ -53,7 +53,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   /**
    * Runs `fn` inside a single interactive transaction with the tenant GUC set,
    * so multi-statement work (e.g. closure-table maintenance) is atomic AND
-   * RLS-scoped. The extension is told (via inTenantTx) not to re-wrap the inner
+   * RLS-scoped. The extension is told (via txDepth > 0) not to re-wrap the inner
    * operations. Spec Section 5: closure maintained in the SAME transaction as
    * the person edit.
    */
@@ -65,15 +65,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       if (tenantId) {
         await tx.$executeRaw`SELECT set_config('app.current_tenant', ${tenantId}, true)`;
       }
-      const prev = store?.inTenantTx ?? false;
+      // Concurrency-safe depth counter (not a boolean save/restore): concurrent
+      // tenant transactions in one request must not corrupt the flag, otherwise a
+      // later model op skips its SET LOCAL wrapping and hits a pooled connection
+      // whose custom GUC has reverted to '' → `''::uuid` (22P02).
       if (store) {
-        store.inTenantTx = true;
+        store.txDepth += 1;
       }
       try {
         return await fn(tx);
       } finally {
         if (store) {
-          store.inTenantTx = prev;
+          store.txDepth -= 1;
         }
       }
     });

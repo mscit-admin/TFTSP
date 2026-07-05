@@ -39,7 +39,15 @@ export async function createSuperAdmin(owner: PrismaClient, email: string) {
 export async function seedPerson(
   owner: PrismaClient,
   tenantId: string,
-  overrides: Partial<{ firstName: string; gender: Gender; fatherId: string | null }> = {},
+  overrides: Partial<{
+    firstName: string;
+    gender: Gender;
+    fatherId: string | null;
+    tribalUnitId: string | null;
+    isDeceased: boolean;
+    photoKey: string | null;
+    birthDate: Date | null;
+  }> = {},
 ) {
   const id = randomUUID();
   const firstName = overrides.firstName ?? 'محمد';
@@ -51,6 +59,10 @@ export async function seedPerson(
       firstName,
       gender: overrides.gender ?? Gender.male,
       fatherId: overrides.fatherId ?? null,
+      tribalUnitId: overrides.tribalUnitId ?? null,
+      isDeceased: overrides.isDeceased ?? false,
+      photoKey: overrides.photoKey ?? null,
+      birthDate: overrides.birthDate ?? null,
       createdBy: tenantId,
     },
   });
@@ -58,6 +70,37 @@ export async function seedPerson(
     data: { tenantId, ancestorId: id, descendantId: id, depth: 0 },
   });
   return id;
+}
+
+/** Create a member user with a scoped role assignment (M3 visibility). */
+export async function createMember(
+  owner: PrismaClient,
+  tenantId: string,
+  email: string,
+  opts: {
+    role?: Role;
+    memberScope?: 'direct' | 'clan' | 'branch' | 'tribe';
+    tribalUnitId?: string | null;
+    anchorPersonId?: string | null;
+    validTo?: Date | null;
+  } = {},
+) {
+  const passwordHash = await argon2.hash(TEST_PASSWORD, { type: argon2.argon2id });
+  const user = await owner.user.create({
+    data: { email: email.toLowerCase(), fullName: email, passwordHash },
+  });
+  await owner.roleAssignment.create({
+    data: {
+      tenantId,
+      userId: user.id,
+      role: opts.role ?? Role.viewer,
+      memberScope: opts.memberScope ?? null,
+      tribalUnitId: opts.tribalUnitId ?? null,
+      anchorPersonId: opts.anchorPersonId ?? null,
+      validTo: opts.validTo ?? null,
+    },
+  });
+  return user;
 }
 
 export interface LoggedIn {

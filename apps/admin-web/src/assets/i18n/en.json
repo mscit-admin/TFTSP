@@ -15,6 +15,8 @@
     "myRequests": "My Requests",
     "imports": "Bulk Import",
     "workflow": "Workflow Settings",
+    "visibility": "Visibility & Privacy",
+    "viewRequests": "View Requests",
     "switchLanguage": "Switch language",
     "logout": "Log out",
     "readOnlyNotice": "You have read-only access. Editing requires an administrative role.",
@@ -349,6 +351,96 @@
       "confirm": "Roll back this entire batch? This cannot be undone from the UI.",
       "done": "Batch rolled back.",
       "refused": "Rollback refused: other records depend on this batch."
+    }
+  },
+  "visibility": {
+    "title": "Visibility & Privacy",
+    "subtitle": "Control who can see the tree and which person fields are exposed. Every read passes through these policies.",
+    "saved": "Visibility settings saved.",
+    "fieldPoliciesTitle": "Field policies",
+    "fields": {
+      "level": "Baseline visibility level",
+      "womenDisplay": "Women display",
+      "defaultMemberScope": "Default member scope",
+      "showPhotos": "Show photos",
+      "showPhones": "Show phone numbers",
+      "showBirthDates": "Show birth dates",
+      "showDeceased": "Show deceased persons",
+      "showMinors": "Show minors (under 18)",
+      "showDocuments": "Show documents",
+      "requireIdForViewRequest": "Require an ID attachment on view requests"
+    },
+    "hints": {
+      "level": "The tribe-wide gate applied before field policies.",
+      "womenDisplay": "How women appear to non-direct-relatives. \"Hidden\" removes them from external search, list and tree.",
+      "defaultMemberScope": "How much of the tree a plain member may read (roles can narrow or widen this).",
+      "showPhotos": "When off, photos are removed from person responses.",
+      "showPhones": "When off, phone numbers are removed from person responses.",
+      "showBirthDates": "When off, birth dates are removed from person responses.",
+      "showDeceased": "When off, deceased persons are hidden from non-admins.",
+      "showMinors": "When off, persons under 18 are hidden from non-admins.",
+      "showDocuments": "When off, attached documents are removed from person responses.",
+      "requireIdForViewRequest": "When on, non-members must attach an ID to request tree access."
+    },
+    "level": {
+      "public": "Public — anyone",
+      "members": "Members only",
+      "family": "Family only",
+      "branch": "Branch only",
+      "admin": "Administrators only"
+    },
+    "women": {
+      "under_father": "Under the father",
+      "with_siblings": "With the siblings",
+      "under_husband": "Under the husband",
+      "hidden": "Hidden from non-relatives"
+    },
+    "scope": {
+      "direct": "Direct line (ancestors, siblings, children)",
+      "clan": "Clan",
+      "branch": "Branch",
+      "tribe": "Whole tribe"
+    }
+  },
+  "viewRequests": {
+    "title": "Tree-View Requests",
+    "filterStatus": "Filter by status",
+    "empty": "No view requests.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approveTitle": "Approve view request",
+    "approveBody": "Approving grants a temporary Viewer role. An expiry date is mandatory.",
+    "validTo": "Access valid until",
+    "validToHint": "The temporary Viewer access expires on this date.",
+    "validToRequired": "Please pick a future expiry date.",
+    "slugRequired": "Please enter the tribe code.",
+    "approved": "Request approved.",
+    "rejected": "Request rejected.",
+    "rejectConfirm": "Reject this view request?",
+    "until": "Until",
+    "idAttached": "ID attached",
+    "submit": "Submit request",
+    "publicTitle": "Request tree access",
+    "publicSubtitle": "Fill in your details. A tribe administrator will review your request and grant temporary access if approved.",
+    "publicDone": "Your request has been submitted. You will be contacted once it is reviewed.",
+    "fields": {
+      "tenantSlug": "Tribe code",
+      "fullName": "Full name",
+      "phone": "Phone number",
+      "allegedBranch": "Your branch (if known)",
+      "reason": "Reason for the request",
+      "idAttachment": "ID document",
+      "status": "Status"
+    },
+    "hints": {
+      "tripleName": "Enter your full triple name.",
+      "idAttachment": "Optional — some tribes require an ID (image or PDF)."
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "expired": "Expired"
     }
   },
   "errors": {

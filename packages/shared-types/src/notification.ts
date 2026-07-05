@@ -8,7 +8,9 @@ export type NotificationType =
   | 'change_request_published'
   | 'change_request_expiring'
   | 'change_request_expired'
-  | 'change_request_conflict';
+  | 'change_request_conflict'
+  /** M3 — non-member tree-view request awaiting admin review. */
+  | 'view_request_submitted';
 
 export interface Notification {
   id: string;

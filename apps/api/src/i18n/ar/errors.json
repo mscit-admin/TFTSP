@@ -7,7 +7,21 @@
     "refresh_token_reused": "تم رصد إعادة استخدام رمز التجديد. تم إبطال الجلسة.",
     "no_tenant_membership": "لا يملك هذا الحساب عضوية في القبيلة المطلوبة.",
     "unauthorized": "يلزم تسجيل الدخول.",
-    "forbidden": "لا تملك صلاحية تنفيذ هذا الإجراء."
+    "forbidden": "لا تملك صلاحية تنفيذ هذا الإجراء.",
+    "grant_expired": "انتهت صلاحية وصولك المؤقت."
+  },
+  "view_request": {
+    "not_found": "طلب المشاهدة غير موجود.",
+    "invalid_state": "هذا الإجراء غير مسموح في الحالة الحالية للطلب.",
+    "id_required": "مرفق الهوية مطلوب لهذه القبيلة.",
+    "valid_to_required": "تاريخ انتهاء الصلاحية (validTo) مطلوب.",
+    "tenant_slug_required": "حقل tenantSlug مطلوب."
+  },
+  "upload": {
+    "no_file": "لم يتم رفع أي ملف.",
+    "file_too_large": "يتجاوز الملف الحد الأقصى للحجم.",
+    "unsupported_type": "نوع الملف غير مدعوم. يُقبل الصور (PNG/JPEG/WEBP/GIF) وملفات PDF فقط.",
+    "svg_rejected": "ملفات SVG غير مسموح بها."
   },
   "tenant": {
     "not_found": "القبيلة غير موجودة.",
