@@ -35,7 +35,8 @@ export type Permission =
   | 'export.read'
   | 'stats.read'
   | 'reputation.read'
-  | 'reputation.manage';
+  | 'reputation.manage'
+  | 'device.manage';
 
 /** Reviewer/approver roles (Spec §3 M2). */
 export const M2_REVIEW_ROLES: Role[] = [Role.tribe_admin, Role.deputy_admin, Role.reviewer];
@@ -97,6 +98,8 @@ export const PERMISSION_MATRIX: Record<Permission, Role[]> = {
   'stats.read': [Role.tribe_admin, Role.deputy_admin],
   'reputation.read': READ_ROLES,
   'reputation.manage': [Role.tribe_admin, Role.deputy_admin],
+  // Mobile device registration for push (M5): any authenticated member.
+  'device.manage': READ_ROLES,
 };
 
 /**

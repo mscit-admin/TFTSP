@@ -39,6 +39,8 @@ import { ReputationModule } from './modules/reputation/reputation.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { ExportsModule } from './modules/exports/exports.module';
 
+import { DevicesModule } from './modules/devices/devices.module';
+
 // BullMQ scheduler needs Redis; disable in tests/CI-without-redis via ENABLE_SCHEDULER=false.
 const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
 
@@ -100,6 +102,7 @@ const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
     ReputationModule,
     StatsModule,
     ExportsModule,
+    DevicesModule,
     ...(schedulerEnabled ? [JobsModule] : []),
   ],
   providers: [

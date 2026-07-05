@@ -1,4 +1,4 @@
-# TFTSP API (Backend) — M1–M4
+# TFTSP API (Backend) — M1–M5
 
 NestJS 10 + Prisma + PostgreSQL 16. Multi-tenant (Shared Schema + Row-Level
 Security), JWT auth, RBAC, persons/unions/lineage (closure table), audit, i18n.
@@ -101,8 +101,17 @@ Key tests:
 | Statistics | `modules/stats` — PostgreSQL **materialized views** `tribe_stats_mv` / `platform_dashboard_mv` (refreshed hourly by BullMQ + on-demand `POST /stats/refresh`). Views have no RLS → read through the owner client with an explicit tenant filter; fast-changing counts (pending CRs, generations) are live-computed. `GET /stats/tribe` (Tribe Admin) / `GET /platform/stats/dashboard` (`@SuperAdminOnly`). |
 | Crowdsourcing & reputation | `modules/reputation` + extended `change-requests`. **No new engine** — a contribution is an M2 Change Request with an optional `contributionType`. `change-request.service` enforces: pending cap (`too_many_pending`), Viewer may only suggest `edit_data`/`add_source` and only when `allowViewerContributions` (`viewer_not_allowed`), target must be visible (→ 404). `ReputationService.recordDecision` bumps accepted/rejected on approve/reject, recomputes `accuracyRate`, re-derives `trustLevel` (no auto-promotion). `GET /reputation/me`, `GET /reputation` (ranked), `GET/PATCH /reputation/thresholds`. |
 
+## Architecture (M5 — Mobile push: device registration + FCM)
+
+The Flutter app consumes the stable M1–M4 APIs; the backend adds only device registration and an FCM push channel.
+
+| Concern | Where |
+|---|---|
+| Device registration | `modules/devices` — tenant-scoped under RLS (`device_registrations`, migration `0007`). `POST /devices` (`{token, platform}`) **upserts by token** (200) so a refreshed FCM token never duplicates; `DELETE /devices/:token` deregisters on logout (owner-scoped, idempotent `{removed}`). Gated by the new `device.manage` permission (all member roles). Register/deregister audited. |
+| FCM push channel | `modules/notifications/channels/{fcm.service,fcm.channel}.ts` — the **third `NotificationChannel`** alongside in-app WebSocket + email. Every created Notification (M2 CR state changes, M3 view-requests) also pushes to the recipient's registered tokens, with a data block carrying `type` + `payload` for deep-open. **Disabled-by-default:** `FcmService` no-ops when `FCM_PROJECT_ID`/`FCM_CLIENT_EMAIL`/`FCM_PRIVATE_KEY` are absent (dev/CI) — never crashes on bootstrap or send. Prunes tokens FCM reports as unregistered. Reuses the existing `notifications.<type>.{subject,body}` i18n keys. |
+
 Architecture decisions specific to the backend are logged in the repo-root
-`DECISIONS.md` (D-101 … D-407).
+`DECISIONS.md` (D-101 … D-502).
 
 ## Module conventions
 

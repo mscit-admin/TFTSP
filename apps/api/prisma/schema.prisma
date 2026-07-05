@@ -203,6 +203,12 @@ enum TrustLevel {
   gold
 }
 
+// M5 — mobile push (Spec §3·M5.7)
+enum DevicePlatform {
+  android
+  ios
+}
+
 // ---------------------------------------------------------------------------
 // Platform-level tables (OUTSIDE RLS) — Spec Section 4.4
 // ---------------------------------------------------------------------------
@@ -220,22 +226,23 @@ model Tenant {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  roleAssignments  RoleAssignment[]
-  persons          Person[]
-  unions           Union[]
-  tribalUnits      TribalUnit[]
-  auditLogs        AuditLog[]
-  changeRequests   ChangeRequest[]
-  notifications    Notification[]
-  workflowSettings WorkflowSettings?
-  importBatches    ImportBatch[]
-  visibilitySettings VisibilitySettings?
-  viewRequests       ViewRequest[]
-  subscription       TenantSubscription?
-  activations        SubscriptionActivation[]
-  personDocuments    PersonDocument[]
-  reputations        ContributorReputation[]
+  roleAssignments      RoleAssignment[]
+  persons              Person[]
+  unions               Union[]
+  tribalUnits          TribalUnit[]
+  auditLogs            AuditLog[]
+  changeRequests       ChangeRequest[]
+  notifications        Notification[]
+  workflowSettings     WorkflowSettings?
+  importBatches        ImportBatch[]
+  visibilitySettings   VisibilitySettings?
+  viewRequests         ViewRequest[]
+  subscription         TenantSubscription?
+  activations          SubscriptionActivation[]
+  personDocuments      PersonDocument[]
+  reputations          ContributorReputation[]
   reputationThresholds ReputationThresholds?
+  deviceRegistrations  DeviceRegistration[]
 
   @@map("tenants")
 }
@@ -285,18 +292,18 @@ model RefreshToken {
 // ---------------------------------------------------------------------------
 
 model RoleAssignment {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @map("tenant_id") @db.Uuid
-  userId       String    @map("user_id") @db.Uuid
-  role         Role
-  tribalUnitId String?   @map("tribal_unit_id") @db.Uuid // scopes branch_admin and below
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  role           Role
+  tribalUnitId   String?      @map("tribal_unit_id") @db.Uuid // scopes branch_admin and below
   // M3 visibility: member read scope + the member's own person node (anchor) for
   // "direct relatives" resolution. Null memberScope falls back to defaultMemberScope.
   memberScope    MemberScope? @map("member_scope")
   anchorPersonId String?      @map("anchor_person_id") @db.Uuid
-  validFrom    DateTime  @default(now()) @map("valid_from")
-  validTo      DateTime? @map("valid_to")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  validFrom      DateTime     @default(now()) @map("valid_from")
+  validTo        DateTime?    @map("valid_to")
+  createdAt      DateTime     @default(now()) @map("created_at")
 
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -378,8 +385,8 @@ model Person {
   unionsAsHusband Union[] @relation("UnionHusband")
   unionsAsWife    Union[] @relation("UnionWife")
 
-  ancestorClosures   PersonClosure[] @relation("ClosureAncestor")
-  descendantClosures PersonClosure[] @relation("ClosureDescendant")
+  ancestorClosures   PersonClosure[]  @relation("ClosureAncestor")
+  descendantClosures PersonClosure[]  @relation("ClosureDescendant")
   documents          PersonDocument[]
 
   @@index([tenantId, fatherId])
@@ -468,21 +475,21 @@ model WorkflowSettings {
 }
 
 model ChangeRequest {
-  id          String              @id @default(uuid()) @db.Uuid
-  tenantId    String              @map("tenant_id") @db.Uuid
-  targetType  ChangeTargetType    @map("target_type")
-  targetId    String?             @map("target_id") @db.Uuid
-  operation   ChangeOperation
-  patch       Json
-  status      ChangeRequestStatus @default(draft)
-  baseVersion Int?                @map("base_version")
+  id               String              @id @default(uuid()) @db.Uuid
+  tenantId         String              @map("tenant_id") @db.Uuid
+  targetType       ChangeTargetType    @map("target_type")
+  targetId         String?             @map("target_id") @db.Uuid
+  operation        ChangeOperation
+  patch            Json
+  status           ChangeRequestStatus @default(draft)
+  baseVersion      Int?                @map("base_version")
   // M4 crowdsourcing: classifies the contribution (Spec §13). Null for admin/import CRs.
-  contributionType ContributionType? @map("contribution_type")
-  createdBy   String              @map("created_by") @db.Uuid
-  expiresAt   DateTime            @map("expires_at")
-  publishedAt DateTime?           @map("published_at")
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
+  contributionType ContributionType?   @map("contribution_type")
+  createdBy        String              @map("created_by") @db.Uuid
+  expiresAt        DateTime            @map("expires_at")
+  publishedAt      DateTime?           @map("published_at")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   tenant  Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reviews ChangeRequestReview[]
@@ -606,19 +613,19 @@ model VisibilitySettings {
 
 // Non-member tree-view requests (Spec §3·M3.5). Approval grants a temporary Viewer.
 model ViewRequest {
-  id             String            @id @default(uuid()) @db.Uuid
-  tenantId       String            @map("tenant_id") @db.Uuid
-  fullName       String            @map("full_name")
-  phone          String
-  allegedBranch  String?           @map("alleged_branch")
-  reason         String
-  idAttachmentKey String?          @map("id_attachment_key")
-  status         ViewRequestStatus @default(pending)
-  reviewedBy     String?           @map("reviewed_by") @db.Uuid
-  grantedUserId  String?           @map("granted_user_id") @db.Uuid
-  validTo        DateTime?         @map("valid_to")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @updatedAt @map("updated_at")
+  id              String            @id @default(uuid()) @db.Uuid
+  tenantId        String            @map("tenant_id") @db.Uuid
+  fullName        String            @map("full_name")
+  phone           String
+  allegedBranch   String?           @map("alleged_branch")
+  reason          String
+  idAttachmentKey String?           @map("id_attachment_key")
+  status          ViewRequestStatus @default(pending)
+  reviewedBy      String?           @map("reviewed_by") @db.Uuid
+  grantedUserId   String?           @map("granted_user_id") @db.Uuid
+  validTo         DateTime?         @map("valid_to")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -701,17 +708,36 @@ model ContributorReputation {
 }
 
 model ReputationThresholds {
-  tenantId                String   @id @map("tenant_id") @db.Uuid
-  silverMinAccepted       Int      @default(5) @map("silver_min_accepted")
-  goldMinAccepted         Int      @default(20) @map("gold_min_accepted")
-  silverMinAccuracy       Float    @default(0.7) @map("silver_min_accuracy")
-  goldMinAccuracy         Float    @default(0.9) @map("gold_min_accuracy")
-  allowViewerContributions Boolean @default(false) @map("allow_viewer_contributions")
-  maxPending              Int      @default(20) @map("max_pending")
-  createdAt               DateTime @default(now()) @map("created_at")
-  updatedAt               DateTime @updatedAt @map("updated_at")
+  tenantId                 String   @id @map("tenant_id") @db.Uuid
+  silverMinAccepted        Int      @default(5) @map("silver_min_accepted")
+  goldMinAccepted          Int      @default(20) @map("gold_min_accepted")
+  silverMinAccuracy        Float    @default(0.7) @map("silver_min_accuracy")
+  goldMinAccuracy          Float    @default(0.9) @map("gold_min_accuracy")
+  allowViewerContributions Boolean  @default(false) @map("allow_viewer_contributions")
+  maxPending               Int      @default(20) @map("max_pending")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("reputation_thresholds")
+}
+
+// ---------------------------------------------------------------------------
+// M5 tenant-scoped table (UNDER RLS) — mobile device registration for FCM push
+// ---------------------------------------------------------------------------
+
+model DeviceRegistration {
+  id         String         @id @default(uuid()) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  token      String         @unique
+  platform   DevicePlatform
+  createdAt  DateTime       @default(now()) @map("created_at")
+  lastSeenAt DateTime       @default(now()) @map("last_seen_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@map("device_registrations")
 }
