@@ -19,3 +19,9 @@ export * from './import';
 
 // M3
 export * from './visibility';
+
+// M4
+export * from './subscription';
+export * from './document';
+export * from './reputation';
+export * from './stats';
