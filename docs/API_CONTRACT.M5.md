@@ -56,3 +56,27 @@ flutter_secure_storage, easy_localization, firebase_messaging. Feature-First lay
 
 ## Out of M5 scope (Backlog)
 Mobile admin panel, import from mobile, advanced/radial tree styles, biometric login, deep links.
+
+---
+
+## Backend implementation notes (as shipped) — for the Mobile agent
+
+> Appendix to the frozen contract. Types: `packages/shared-types/src/device.ts`. Migration: `0007_device_registrations`. Base `/api/v1`.
+
+### Device registration
+- `POST /devices` body `RegisterDeviceDto { token, platform: 'android'|'ios' }` → **200** `DeviceRegistration`
+  `{ id, tenantId, userId, token, platform, createdAt, lastSeenAt }`. **Upsert by token** — re-registering the same
+  token (refresh) updates the row (returns the same `id`), never duplicates. Requires an authenticated, tenant-bound
+  access token; allowed for every member role. Returns **200** (not 201) because it is an upsert.
+- `DELETE /devices/:token` → **200** `{ removed: 0 | 1 }`. Owner-scoped (only your own token) and idempotent — deleting
+  a missing/foreign token returns `{ removed: 0 }`. **URL-encode the token** (FCM tokens may contain `:` `-` `_`).
+- Flow: register on login / on FCM `onTokenRefresh`; deregister on logout **before** clearing the JWT (the call needs auth).
+
+### Push payload
+- FCM message: `notification { title, body }` (localized) plus a **`data`** block
+  `{ type: <NotificationType>, payload: <JSON string>, notificationId, ... }`. Parse `data.type` + `data.payload`
+  to deep-open the related item (e.g. `change_request_approved` → open that request). `type` mirrors the in-app
+  `Notification.type`; `payload` is the same object returned by `GET /notifications`.
+- Push is **best-effort and disabled in dev/CI** (no Firebase creds server-side). Do not rely on push for
+  correctness — `GET /notifications` stays the source of truth; push only wakes the app. Delivery/latency gates
+  need real devices + a Firebase project (not verifiable in headless CI).
