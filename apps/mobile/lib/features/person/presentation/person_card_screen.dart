@@ -98,8 +98,11 @@ class _CardBody extends StatelessWidget {
         // Only fields the Visibility Resolver returned are present.
         _field(context, 'person.laqab', p.laqab),
         _field(context, 'person.profession', p.profession),
-        _field(context, 'person.gender',
-            p.gender == 'female' ? 'person.female'.tr() : 'person.male'.tr()),
+        _field(
+          context,
+          'person.gender',
+          p.gender == 'female' ? 'person.female'.tr() : 'person.male'.tr(),
+        ),
         _field(context, 'person.born', p.birthDate),
         _field(context, 'person.birthPlace', p.birthPlace),
         if (p.isDeceased) _field(context, 'person.died', p.deathDate),
@@ -111,8 +114,10 @@ class _CardBody extends StatelessWidget {
         ],
         const SizedBox(height: 20),
         if (card.lineage.isNotEmpty) ...[
-          Text('person.lineage'.tr(),
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'person.lineage'.tr(),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
@@ -123,8 +128,10 @@ class _CardBody extends StatelessWidget {
           ),
           const SizedBox(height: 20),
         ],
-        Text('person.documents'.tr(),
-            style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'person.documents'.tr(),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         if (card.documents.isEmpty)
           Text('person.noDocuments'.tr())

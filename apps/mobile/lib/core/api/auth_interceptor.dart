@@ -86,13 +86,14 @@ class AuthInterceptor extends Interceptor {
     final completer = Completer<bool>();
     _refreshing = completer;
 
-    unawaited(_performRefresh().then((ok) {
+    final pending = _performRefresh().then((ok) {
       _refreshing = null;
       completer.complete(ok);
     }).catchError((Object _) {
       _refreshing = null;
       completer.complete(false);
-    }));
+    });
+    unawaited(pending);
 
     return completer.future;
   }

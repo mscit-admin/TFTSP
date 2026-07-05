@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tftsp_mobile/core/l10n/l10n.dart';
 
 /// AppBar action that instantly flips AR ⇄ EN (and thus RTL ⇄ LTR) on every
-/// screen, including the tree, by calling [EasyLocalization.setLocale].
+/// screen, including the tree, by calling `context.setLocale`.
 class LanguageToggle extends StatelessWidget {
   const LanguageToggle({super.key});
 

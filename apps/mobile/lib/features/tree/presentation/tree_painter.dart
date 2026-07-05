@@ -122,10 +122,10 @@ class TreePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(TreePainter old) =>
-      old.layout != layout ||
-      old.nodes != nodes ||
-      old.rtl != rtl ||
-      old.highlightId != highlightId ||
-      old.colors != colors;
+  bool shouldRepaint(TreePainter oldDelegate) =>
+      oldDelegate.layout != layout ||
+      oldDelegate.nodes != nodes ||
+      oldDelegate.rtl != rtl ||
+      oldDelegate.highlightId != highlightId ||
+      oldDelegate.colors != colors;
 }

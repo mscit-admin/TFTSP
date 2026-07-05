@@ -106,8 +106,9 @@ class ChangeRequest {
         contributionType:
             ContributionType.fromWire(json['contributionType'] as String?),
         reviews: (json['reviews'] as List<dynamic>? ?? const [])
-            .map((e) =>
-                ChangeRequestReview.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) => ChangeRequestReview.fromJson(e as Map<String, dynamic>),
+            )
             .toList(),
         expiresAt: json['expiresAt'] as String?,
       );

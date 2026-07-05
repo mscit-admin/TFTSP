@@ -2,7 +2,7 @@ import 'package:tftsp_mobile/features/auth/domain/auth_models.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
-/// Immutable session state driven by [AuthController].
+/// Immutable session state driven by `AuthController`.
 class AuthState {
   const AuthState({
     this.status = AuthStatus.unknown,

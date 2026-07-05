@@ -95,13 +95,15 @@ class PersonRepository {
   Map<String, dynamic> _encode(PersonCard card) => {
         'person': _personToJson(card.person),
         'documents': card.documents
-            .map((d) => {
-                  'id': d.id,
-                  'kind': d.kind,
-                  'filename': d.filename,
-                  'downloadUrl': d.downloadUrl,
-                  'sizeBytes': d.sizeBytes,
-                })
+            .map(
+              (d) => {
+                'id': d.id,
+                'kind': d.kind,
+                'filename': d.filename,
+                'downloadUrl': d.downloadUrl,
+                'sizeBytes': d.sizeBytes,
+              },
+            )
             .toList(),
         'lineage': card.lineage
             .map((l) => {'id': l.id, 'name': l.name})

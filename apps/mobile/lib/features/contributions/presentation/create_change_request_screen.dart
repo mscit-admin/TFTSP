@@ -102,9 +102,13 @@ class _CreateChangeRequestScreenState
                 ),
                 items: [
                   DropdownMenuItem(
-                      value: 'update', child: Text('contributions.opUpdate'.tr())),
+                    value: 'update',
+                    child: Text('contributions.opUpdate'.tr()),
+                  ),
                   DropdownMenuItem(
-                      value: 'create', child: Text('contributions.opCreate'.tr())),
+                    value: 'create',
+                    child: Text('contributions.opCreate'.tr()),
+                  ),
                 ],
                 onChanged: (v) => setState(() => _operation = v ?? _operation),
               ),

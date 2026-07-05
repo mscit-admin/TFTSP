@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tftsp_mobile/core/api/api_exception.dart';
 import 'package:tftsp_mobile/core/auth/token_storage.dart';
-import 'package:tftsp_mobile/core/db/cache_database.dart';
 import 'package:tftsp_mobile/core/logging/app_logger.dart';
 import 'package:tftsp_mobile/core/providers.dart';
 import 'package:tftsp_mobile/features/auth/domain/auth_models.dart';
