@@ -25,3 +25,6 @@ export * from './subscription';
 export * from './document';
 export * from './reputation';
 export * from './stats';
+
+// M5
+export * from './device';
