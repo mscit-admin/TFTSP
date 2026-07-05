@@ -1,11 +1,33 @@
 # DEPLOYMENT — running & trying TFTSP on a server
 
-Two paths: **(A) Quick trial** (Docker for infra + API, run the web panels with Node) — the fastest way to
-click through the system; **(B) Production notes** — what to change for a real deployment.
+## 0. One command (interactive installer) — easiest
+
+```bash
+./install.sh
+```
+It asks **where to install** and **which port**, then builds and runs the whole system with Docker on a
+**single port** (nginx gateway): Tribe Admin panel at `/`, Super-Admin panel at `/platform/`, API + WebSocket
+proxied under `/api` and `/socket.io`. It also generates fresh JWT secrets and can seed demo data.
+
+After it finishes (default port 8080):
+- Tribe Admin panel → `http://<host>:8080/`
+- Super-Admin panel → `http://<host>:8080/platform/`
+- API docs (Swagger) → `http://<host>:8080/api/docs`
+- Demo Super Admin → `superadmin@tftsp.local` / `ChangeMe!2026_seed`
+
+> **Trial caveat:** in a single-host Docker trial, document upload & photo preview use MinIO **presigned URLs**
+> that point at the internal `minio` host, so they may not open from your browser. Everything else (auth,
+> people, tree, change requests, import, visibility, dashboards, subscriptions) works. On a real server with a
+> domain, expose MinIO/S3 at a browser-reachable address and set `MINIO_ENDPOINT` accordingly.
+
+---
+
+Manual paths below: **(A) Quick trial** (Docker for infra + API, run the web panels with Node); **(B)
+Production notes** for a real deployment.
 
 > Verified building blocks: the API migrations, the tenant-isolation e2e (Testcontainers), and both Angular
-> builds all pass in CI. The compose wiring below has not been run end-to-end in the authoring environment —
-> treat first boot as a smoke test.
+> builds all pass in CI. The compose/gateway wiring and `install.sh` have **not** been run end-to-end in the
+> authoring environment — treat first boot as a smoke test and watch `docker compose logs -f`.
 
 ## Prerequisites
 - **Docker** + Docker Compose v2

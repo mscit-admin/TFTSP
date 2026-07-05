@@ -75,11 +75,35 @@ services:
       REDIS_HOST: "redis"
       MINIO_ENDPOINT: "minio"
       SMTP_HOST: "mailhog"
+    # Bound to localhost only — the app is reached through the gateway on ${TFTSP_PORT}.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
-  # admin-web / platform-web are run via `ng serve` (or their own Dockerfiles) in dev;
-  # the Dockerfile-based service blocks are added when their images are finalised.
+  # Single entry point: serves the Tribe Admin panel at /, the Super-Admin panel at
+  # /platform/, and proxies /api + /socket.io to the API. One port for the whole system.
+  gateway:
+    build:
+      context: .
+      dockerfile: deploy/gateway.Dockerfile
+    container_name: tftsp-gateway
+    depends_on:
+      - api
+    ports:
+      - "${TFTSP_PORT:-8080}:80"
+
+  # One-off demo seed (Super Admin + 2 tribes). Run explicitly:
+  #   docker compose run --rm seed
+  seed:
+    build:
+      context: ./apps/api
+      target: builder
+    profiles: ["seed"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://tftsp:tftsp_dev_pw@postgres:5432/tftsp?schema=public"
+    command: ["npm", "run", "seed"]
 
 volumes:
   pg_data:
