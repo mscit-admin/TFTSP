@@ -90,4 +90,23 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  # mobile (flutter analyze && flutter test) is added in M5 — apps/mobile is a placeholder in M1.
+  mobile:
+    name: mobile (flutter analyze · test · build apk)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.24.5"
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      # Android build gate (Spec §10·M5.1). iOS build needs a macOS runner + the
+      # Xcode project generated at deploy time (see apps/mobile/README) — out of Linux CI.
+      - run: flutter build apk --debug
+  # NOTE: real-device gates (>=30fps, push <=10s, offline) and the iOS build are QA/deploy-time.
