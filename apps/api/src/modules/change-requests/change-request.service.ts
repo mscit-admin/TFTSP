@@ -4,9 +4,11 @@ import {
   ChangeRequest,
   ChangeRequestStatus,
   ChangeTargetType,
+  ContributionType,
   NotificationType,
   Prisma,
   ReviewDecision,
+  Role,
 } from '@prisma/client';
 import { IMPORT_BATCH_APPLIER } from '../imports/import.constants';
 import type { ImportBatchApplier } from '../imports/import-apply.service';
@@ -16,8 +18,12 @@ import { AuthenticatedUser } from '../../common/auth/authenticated-user';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant-context';
 import { assertValidPatch } from '../../common/util/json-patch';
+import { CONTRIBUTOR_ROLES, VIEWER_ALLOWED_CONTRIBUTIONS } from '../../common/rbac/contributions';
 import { AuditService } from '../audit/audit.service';
 import { NotificationService } from '../notifications/notification.service';
+import { PersonsService } from '../persons/persons.service';
+import { ReputationService } from '../reputation/reputation.service';
+import { ReputationRepository } from '../reputation/reputation.repository';
 import { WorkflowSettingsService } from '../workflow-settings/workflow-settings.service';
 import { ChangeRequestRepository, ChangeRequestWithReviews } from './change-request.repository';
 import { ChangeRequestPublisher } from './change-request.publisher';
@@ -43,6 +49,9 @@ export class ChangeRequestService {
     private readonly audit: AuditService,
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    private readonly persons: PersonsService,
+    private readonly reputation: ReputationService,
+    private readonly reputationRepo: ReputationRepository,
     // M2.5: optional so the M2 module stays independent of the imports module.
     @Optional()
     @Inject(IMPORT_BATCH_APPLIER)
@@ -54,6 +63,11 @@ export class ChangeRequestService {
 
     if (dto.operation !== ChangeOperation.create && !dto.targetId) {
       throw AppException.badRequest(ErrorKeys.CR_TARGET_REQUIRED);
+    }
+
+    // M4 crowdsourcing rules (viewer allow-list, pending cap, visibility).
+    if (dto.contributionType) {
+      await this.enforceContributionRules(dto, user);
     }
 
     let baseVersion: number | null = null;
@@ -71,6 +85,7 @@ export class ChangeRequestService {
       patch: dto.patch as unknown as Prisma.InputJsonValue,
       status: ChangeRequestStatus.draft,
       baseVersion,
+      contributionType: dto.contributionType ?? null,
       createdBy: user.id,
       expiresAt,
     });
@@ -247,6 +262,10 @@ export class ChangeRequestService {
     ) {
       await this.importApplier.onBatchRejected(cr);
     }
+    // M4: a rejected contribution bumps the contributor's `rejected` counter.
+    if (status === ChangeRequestStatus.rejected && cr.contributionType) {
+      await this.reputation.recordDecision(cr.createdBy, false);
+    }
     await this.notifyOwner(cr, notifyType);
     return updated;
   }
@@ -290,6 +309,10 @@ export class ChangeRequestService {
     if (outcome === 'published') {
       await this.notifyOwner(cr, NotificationType.change_request_approved);
       await this.notifyOwner(cr, NotificationType.change_request_published);
+      // M4: an accepted (published) contribution bumps `accepted` + recomputes accuracy.
+      if (cr.contributionType) {
+        await this.reputation.recordDecision(cr.createdBy, true);
+      }
     } else {
       await this.notifyOwner(cr, NotificationType.change_request_conflict);
     }
@@ -310,6 +333,57 @@ export class ChangeRequestService {
       type,
       payload: { changeRequestId: cr.id, targetType: cr.targetType, operation: cr.operation },
     });
+  }
+
+  /**
+   * M4 §13 contribution gating: viewer allow-list (+ tribe opt-in), pending cap,
+   * and visibility (an out-of-scope person target ⇒ 404 via the resolver).
+   */
+  private async enforceContributionRules(
+    dto: CreateChangeRequestDto,
+    user: AuthenticatedUser,
+  ): Promise<void> {
+    const thresholds = await this.reputation.getThresholds();
+
+    // Flood protection: max pending contributions per contributor.
+    const pending = await this.reputationRepo.countPending(user.id);
+    if (pending >= thresholds.maxPending) {
+      throw AppException.forbidden(ErrorKeys.CONTRIBUTION_TOO_MANY_PENDING, {
+        pending,
+        maxPending: thresholds.maxPending,
+      });
+    }
+
+    // Viewer restriction: only edit_data/add_source, and only when enabled.
+    const roles = await this.loadActiveRoles(user);
+    const privileged = roles.some((r) => CONTRIBUTOR_ROLES.includes(r));
+    if (!privileged) {
+      const viewerOk =
+        thresholds.allowViewerContributions &&
+        VIEWER_ALLOWED_CONTRIBUTIONS.includes(dto.contributionType as ContributionType);
+      if (!viewerOk) {
+        throw AppException.forbidden(ErrorKeys.CONTRIBUTION_VIEWER_NOT_ALLOWED);
+      }
+    }
+
+    // Visibility: can't suggest on a person outside the contributor's scope (→404).
+    if (dto.targetId && dto.targetType === ChangeTargetType.person) {
+      await this.persons.findOne(dto.targetId);
+    }
+  }
+
+  private async loadActiveRoles(user: AuthenticatedUser): Promise<Role[]> {
+    const now = new Date();
+    const rows = await this.prisma.platform.roleAssignment.findMany({
+      where: {
+        tenantId: this.tenantContext.requireTenantId(),
+        userId: user.id,
+        validFrom: { lte: now },
+        OR: [{ validTo: null }, { validTo: { gte: now } }],
+      },
+      select: { role: true },
+    });
+    return rows.map((r) => r.role);
   }
 
   private async captureBaseVersion(

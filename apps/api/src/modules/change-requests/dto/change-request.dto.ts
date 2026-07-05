@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ChangeOperation, ChangeTargetType, ReviewDecision } from '@prisma/client';
+import {
+  ChangeOperation,
+  ChangeTargetType,
+  ContributionType,
+  ReviewDecision,
+} from '@prisma/client';
 import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 
 /** RFC-6902 op (validated structurally in the service via assertValidPatch). */
@@ -36,6 +41,14 @@ export class CreateChangeRequestDto {
   @IsArray()
   @Type(() => JsonPatchOpDto)
   patch!: JsonPatchOpDto[];
+
+  @ApiPropertyOptional({
+    enum: ContributionType,
+    description: 'M4 crowdsourcing: classifies a community contribution (Spec §13).',
+  })
+  @IsOptional()
+  @IsEnum(ContributionType)
+  contributionType?: ContributionType;
 }
 
 export class UpdateChangeRequestDto {

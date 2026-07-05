@@ -8,8 +8,10 @@ import { TenantContext } from '../../common/tenant/tenant-context';
 import { TenantTransactionClient } from '../../common/prisma/prisma.extension';
 import { buildFullName } from '../../common/util/arabic';
 import { parsePartialDate } from '../../common/util/dates';
+import { sanitizeBiography } from '../../common/util/sanitize-html';
 import { AuditService } from '../audit/audit.service';
 import { LineageService } from '../lineage/lineage.service';
+import { PlanLimitService } from '../subscriptions/plan-limit.service';
 import { VisibilityResolver } from '../visibility/visibility.resolver';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { ListPersonsDto } from './dto/list-persons.dto';
@@ -40,6 +42,7 @@ export class PersonsService {
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
     private readonly visibility: VisibilityResolver,
+    private readonly planLimit: PlanLimitService,
     config: ConfigService,
   ) {
     this.duplicateThreshold = config.get<number>('duplicateSimilarityThreshold') ?? 0.6;
@@ -108,6 +111,8 @@ export class PersonsService {
   }
 
   async create(dto: CreatePersonDto): Promise<Person> {
+    // Plan-cap enforcement (Spec §M4.4) — supersedes the M2.5 max_persons stand-in.
+    await this.planLimit.assertCanAddPersons(1);
     return this.prisma.tenantTransaction((tx) => this.createInTx(tx, dto));
   }
 
@@ -151,6 +156,8 @@ export class PersonsService {
       motherId: dto.motherId ?? null,
       tribalUnitId: dto.tribalUnitId ?? null,
       profession: dto.profession ?? null,
+      // Rich-text biography is sanitized before persistence (Spec §M4.3 XSS).
+      biography: dto.biography !== undefined ? sanitizeBiography(dto.biography) : null,
       createdBy: createdByOverride ?? this.tenantContext.userId ?? tenantId,
       importBatchId: importBatchId ?? null,
     });
@@ -270,6 +277,13 @@ export class PersonsService {
       ...(dto.motherId !== undefined ? { motherId: nextMotherId } : {}),
       ...(dto.tribalUnitId !== undefined ? { tribalUnitId: dto.tribalUnitId ?? null } : {}),
       ...(dto.profession !== undefined ? { profession: dto.profession ?? null } : {}),
+      // Sanitize the biography on every write path (direct + change-request publisher).
+      // The publisher casts JSON-Patch fields, so the value may arrive as null (clear).
+      ...(dto.biography !== undefined
+        ? {
+            biography: typeof dto.biography === 'string' ? sanitizeBiography(dto.biography) : null,
+          }
+        : {}),
     };
 
     if (nameChanged) {

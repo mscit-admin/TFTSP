@@ -80,3 +80,54 @@ recomputes `accuracyRate`; rejected raises `rejected`.  6. Viewer in a non-enabl
 
 ## Out of M4 scope
 Mobile (M5); radial/timeline trees, GEDCOM, real payment gateways, SMS/WhatsApp/Telegram, AI (all Backlog).
+
+---
+
+## Backend implementation notes (as shipped) — for admin-web & platform-web
+
+> Appendix to the frozen contract above. Exact request/response shapes as the API returns them.
+> Types live in `packages/shared-types/{subscription,document,reputation,stats}.ts` (import these).
+> Migration: `0006_subscriptions_documents_reputation_stats`. All routes are under `/api/v1`.
+
+### Documents (admin-web) — presign → PUT → confirm
+1. `POST /documents/presign` body `{ personId, filename, contentType, sizeBytes }`
+   → **201** `{ uploadUrl, objectKey }`. `contentType` must be `image/*` or `application/pdf`
+   (svg / other → **400** `errors.upload.svg_rejected` / `errors.upload.unsupported_type`; `> 10MB` → `errors.upload.file_too_large`).
+2. Browser does a raw `PUT uploadUrl` with the file bytes (Content-Type = the same contentType). The URL is a 15-min presigned MinIO PUT.
+3. `POST /documents/confirm` body `{ personId, objectKey, filename }` → **201** `PersonDocument`
+   `{ id, tenantId, personId, kind:'image'|'pdf', objectKey, filename, sizeBytes, uploadedBy, createdAt }`.
+   Confirm re-reads the actual uploaded bytes and runs the magic-byte check, so an SVG masked as `.png` is rejected here (**400** `errors.upload.svg_rejected`).
+4. `GET /persons/:id/documents` → **200** `DocumentWithUrl[]` (each = `PersonDocument` + `downloadUrl`, a 15-min presigned GET).
+5. `DELETE /documents/:id` → soft-delete. Any of these with an out-of-scope person → **404** (M3 resolver).
+- Permissions: read = any read role; write (presign/confirm/delete) = tribe_admin / deputy_admin / branch_admin.
+
+### Subscriptions (platform-web, Super Admin only)
+- `GET /platform/tenants/:id/subscription` → **200** `SubscriptionView` =
+  `{ tenantId, tier, status, activatedAt, expiresAt, activatedBy, createdAt, updatedAt, maxPersons, currentPersons }`.
+  `maxPersons` is `null` for Enterprise (unlimited); `currentPersons` is the live person count. A tenant with no row yet returns a synthesized Free/active default.
+- `PUT /platform/tenants/:id/subscription` body `SetSubscriptionDto` `{ tier, expiresAt?, note? }` → **200** the updated `SubscriptionView`; logs a `SubscriptionActivation`.
+- `GET /platform/tenants/:id/subscription/activations` → **200** `SubscriptionActivation[]` `{ id, tenantId, tier, activatedBy, note, createdAt }` (newest first).
+- Plan-cap block (person-create / import publish): **403** `errors.subscription.plan_limit_reached`, `details { tier, max, current }`.
+
+### Stats
+- `GET /stats/tribe` (admin-web) → **200** `TribeStats`
+  `{ tenantId, totalPersons, livingPersons, deceasedPersons, malePersons, femalePersons, generations, unitsCount, pendingChangeRequests, contributorsCount, byGeneration:[{depth,count}], refreshedAt }`.
+- `GET /platform/stats/dashboard` (platform-web, Super Admin) → **200** `PlatformDashboard`
+  `{ tribes, activeTribes, suspendedTribes, totalPersons, totalUsers, byPlan:[{tier,tribes}], expiringSoon:[{tenantId,nameEn,expiresAt}], refreshedAt }`.
+- `POST /stats/refresh` (admin) and `POST /platform/stats/refresh` (Super Admin) force a materialized-view refresh; the views also refresh hourly.
+  `refreshedAt` reflects the last view refresh — the live-computed fields (pending CRs, generations) are always current.
+
+### Crowdsourcing & reputation
+- Contribution = the existing `POST /change-requests` with an added optional `contributionType`
+  (`add_person|edit_data|fix_relation|upload_document|add_source|add_biography`). Everything else about the CR workflow is unchanged (submit/review/publish).
+- Guard errors on create: **403** `errors.contribution.too_many_pending`; **403** `errors.contribution.viewer_not_allowed`; out-of-scope target → **404**.
+- `Person.biography` (sanitized rich text) is set via a normal `edit_data`/`add_biography` change request (JSON-Patch `/biography`), approved like any change.
+- `GET /reputation/me` → **200** `ContributorReputation` `{ tenantId, userId, totalContributions, accepted, rejected, accuracyRate, trustLevel }`.
+- `GET /reputation` (Tribe Admin) → **200** `ContributorReputation[]` ranked by accuracy.
+- `GET /reputation/thresholds` / `PATCH /reputation/thresholds` (Tribe Admin) → **200** `ReputationThresholds`
+  `{ tenantId, silverMinAccepted, goldMinAccepted, silverMinAccuracy, goldMinAccuracy, allowViewerContributions, maxPending }`.
+
+### Exports
+- `POST /exports/tree/pdf` `{ rootId?, layout, paper:'A0'..'A4' }` and `POST /exports/tree/png` `{ rootId?, layout, scale:2|4 }`
+  stream a binary (`Content-Disposition: attachment`). If no Chromium is installed on the server → **500** `errors.export.failed`.
+- `GET /exports/persons.xlsx` / `GET /exports/persons.csv` stream the import-template columns (round-trip). Read permission = any read role.

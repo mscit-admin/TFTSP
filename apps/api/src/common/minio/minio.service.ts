@@ -51,4 +51,41 @@ export class MinioService implements OnModuleInit {
   async remove(key: string): Promise<void> {
     await this.client.removeObject(this.bucket, key);
   }
+
+  /** Presigned PUT URL (default 15-min TTL) for direct browser upload (Spec §M4.3). */
+  presignedPut(key: string, expirySeconds = 900): Promise<string> {
+    return this.client.presignedPutObject(this.bucket, key, expirySeconds);
+  }
+
+  /** Presigned GET URL (default 15-min TTL); never a public URL. */
+  presignedGet(key: string, expirySeconds = 900): Promise<string> {
+    return this.client.presignedGetObject(this.bucket, key, expirySeconds);
+  }
+
+  async stat(key: string): Promise<{ size: number }> {
+    const s = await this.client.statObject(this.bucket, key);
+    return { size: s.size };
+  }
+
+  /** Read the first `n` bytes of an object (for magic-byte validation on confirm). */
+  async getFirstBytes(key: string, n = 512): Promise<Buffer> {
+    const stream = await this.client.getObject(this.bucket, key);
+    return new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      let total = 0;
+      const done = (): void => {
+        stream.destroy();
+        resolve(Buffer.concat(chunks).subarray(0, n));
+      };
+      stream.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+        total += chunk.length;
+        if (total >= n) {
+          done();
+        }
+      });
+      stream.on('end', done);
+      stream.on('error', reject);
+    });
+  }
 }

@@ -71,6 +71,14 @@ export const ErrorKeys = {
   UPLOAD_UNSUPPORTED_TYPE: 'errors.upload.unsupported_type',
   UPLOAD_SVG_REJECTED: 'errors.upload.svg_rejected',
 
+  // subscriptions / documents / crowdsourcing (M4)
+  SUBSCRIPTION_PLAN_LIMIT_REACHED: 'errors.subscription.plan_limit_reached',
+  SUBSCRIPTION_NOT_FOUND: 'errors.subscription.not_found',
+  DOCUMENT_NOT_FOUND: 'errors.document.not_found',
+  CONTRIBUTION_TOO_MANY_PENDING: 'errors.contribution.too_many_pending',
+  CONTRIBUTION_VIEWER_NOT_ALLOWED: 'errors.contribution.viewer_not_allowed',
+  EXPORT_FAILED: 'errors.export.failed',
+
   // generic
   VALIDATION_FAILED: 'errors.validation.failed',
   NOT_FOUND: 'errors.generic.not_found',

@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Gender } from '@prisma/client';
-import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreatePersonDto {
   @ApiProperty()
@@ -71,6 +79,15 @@ export class CreatePersonDto {
   @IsOptional()
   @IsString()
   profession?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Rich-text biography/story (Spec §M4.3). Sanitized server-side before persistence.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  biography?: string;
 
   @ApiPropertyOptional({
     description: 'Required to proceed when duplicate candidates (similarity >= 0.6) were returned.',

@@ -9,6 +9,7 @@
  *  - over-plan-limit rejected before processing with available count;
  *  - import logged in Audit.
  */
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { Role } from '@prisma/client';
 import { bootstrapTestApp, TestContext } from './utils/test-app';
@@ -254,9 +255,23 @@ describe('M2.5 Bulk Import (Spec §12)', () => {
     expect(blocked.body.details.dependentChildren.length).toBeGreaterThan(0);
   });
 
-  it('rejects an over-plan-limit import before processing, with the available count', async () => {
+  it('rejects an over-plan-limit import before processing (subscription tier cap)', async () => {
+    // M4 supersedes the M2.5 max_persons stand-in: the cap is the Free tier's 500.
+    // Seed the tenant up to 499 so importing 3 more (502) exceeds the cap.
     const current = await ctx.owner.person.count({ where: { tenantId, deletedAt: null } });
-    await ctx.owner.tenant.update({ where: { id: tenantId }, data: { maxPersons: current + 1 } });
+    const toSeed = 499 - current;
+    if (toSeed > 0) {
+      await ctx.owner.person.createMany({
+        data: Array.from({ length: toSeed }, (_, i) => ({
+          id: randomUUID(),
+          tenantId,
+          fullName: `cap ${i}`,
+          firstName: `cap${i}`,
+          gender: 'male' as const,
+          createdBy: tenantId,
+        })),
+      });
+    }
 
     const id = await uploadAndParse([
       { rowRef: '1', fullName: 'زائد واحد', gender: 'male' },
@@ -267,14 +282,10 @@ describe('M2.5 Bulk Import (Spec §12)', () => {
       .post(`/api/v1/imports/${id}/submit`)
       .set(auth(adminToken))
       .send({});
-    expect(res.status).toBe(400);
-    expect(res.body.messageKey).toBe('errors.import.plan_limit_exceeded');
-    expect(res.body.details.available).toBe(1);
-    expect(res.body.details.requested).toBe(3);
-
-    // restore
-    await ctx.owner.tenant.update({ where: { id: tenantId }, data: { maxPersons: 500 } });
-  });
+    expect(res.status).toBe(403);
+    expect(res.body.messageKey).toBe('errors.subscription.plan_limit_reached');
+    expect(res.body.details).toMatchObject({ tier: 'free', max: 500 });
+  }, 60_000);
 
   it('logs imports in the audit trail', async () => {
     const logs = await ctx.owner.auditLog.findMany({

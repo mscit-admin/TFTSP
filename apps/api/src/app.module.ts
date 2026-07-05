@@ -32,6 +32,12 @@ import { ImportsModule } from './modules/imports/imports.module';
 // M3
 import { VisibilityModule } from './modules/visibility/visibility.module';
 import { ViewRequestsModule } from './modules/view-requests/view-requests.module';
+// M4
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { ReputationModule } from './modules/reputation/reputation.module';
+import { StatsModule } from './modules/stats/stats.module';
+import { ExportsModule } from './modules/exports/exports.module';
 
 // BullMQ scheduler needs Redis; disable in tests/CI-without-redis via ENABLE_SCHEDULER=false.
 const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
@@ -88,6 +94,12 @@ const schedulerEnabled = process.env.ENABLE_SCHEDULER !== 'false';
     // M3 — VisibilityModule is @Global; every person read path injects the resolver.
     VisibilityModule,
     ViewRequestsModule,
+    // M4 — SubscriptionsModule is @Global (plan-cap guard injectable everywhere).
+    SubscriptionsModule,
+    DocumentsModule,
+    ReputationModule,
+    StatsModule,
+    ExportsModule,
     ...(schedulerEnabled ? [JobsModule] : []),
   ],
   providers: [

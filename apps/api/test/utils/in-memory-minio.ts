@@ -27,4 +27,29 @@ export class InMemoryMinio {
   async remove(key: string): Promise<void> {
     this.store.delete(key);
   }
+
+  /** Test helper: place raw bytes directly (simulates a presigned PUT upload). */
+  put(key: string, buffer: Buffer): void {
+    this.store.set(key, buffer);
+  }
+
+  async presignedPut(key: string): Promise<string> {
+    return `memory://put/${key}`;
+  }
+
+  async presignedGet(key: string): Promise<string> {
+    return `memory://get/${key}`;
+  }
+
+  async stat(key: string): Promise<{ size: number }> {
+    return { size: this.store.get(key)?.length ?? 0 };
+  }
+
+  async getFirstBytes(key: string, n = 512): Promise<Buffer> {
+    const buf = this.store.get(key);
+    if (!buf) {
+      throw new Error('NotFound');
+    }
+    return buf.subarray(0, n);
+  }
 }
