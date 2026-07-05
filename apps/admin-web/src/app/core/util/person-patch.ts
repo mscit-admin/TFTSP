@@ -20,6 +20,7 @@ const PATCH_FIELDS: (keyof CreatePersonDto)[] = [
   'motherId',
   'tribalUnitId',
   'profession',
+  'biography',
 ];
 
 function isEmpty(v: unknown): boolean {

@@ -11,11 +11,14 @@
     "tribalUnits": "Tribal Units",
     "tree": "Family Tree",
     "settings": "Tribe Settings",
+    "dashboard": "Dashboard",
     "reviewQueue": "Review Queue",
     "myRequests": "My Requests",
+    "myReputation": "My Reputation",
     "imports": "Bulk Import",
     "workflow": "Workflow Settings",
     "visibility": "Visibility & Privacy",
+    "reputation": "Contributors",
     "viewRequests": "View Requests",
     "switchLanguage": "Switch language",
     "logout": "Log out",
@@ -40,6 +43,8 @@
     "title": "Persons",
     "new": "Add person",
     "propose": "Propose person",
+    "exportXlsx": "Excel",
+    "exportCsv": "CSV",
     "proposalNotice": "You are not an administrator. Saving will submit this as a change request for review.",
     "newTitle": "New person",
     "editTitle": "Edit person",
@@ -66,10 +71,12 @@
       "mother": "Mother",
       "tribalUnit": "Tribal unit",
       "profession": "Profession",
+      "biography": "Biography / story",
       "status": "Status"
     },
     "hints": {
-      "partialDate": "Year-only is allowed (e.g. 1965 or 1965-03-12)."
+      "partialDate": "Year-only is allowed (e.g. 1965 or 1965-03-12).",
+      "biography": "A short story or biography. Formatting is sanitized on save."
     },
     "genderValue": {
       "male": "Male",
@@ -129,7 +136,21 @@
     "title": "Family Tree",
     "reload": "Reload",
     "empty": "No tree data available.",
-    "m1Notice": "Basic tree preview. The interactive high-detail renderer arrives in a later milestone."
+    "search": "Search in tree…",
+    "find": "Find",
+    "notFound": "No matching person in the loaded tree.",
+    "measure": "Path between two",
+    "measureHint": "Click two people to highlight the lineage path.",
+    "fit": "Fit",
+    "highlighted": "Highlighted",
+    "canvasMode": "Large tree — rendered on canvas with level-of-detail for performance.",
+    "exportPdf": "PDF",
+    "exportPng": "PNG",
+    "layout": {
+      "vertical": "Vertical",
+      "horizontal": "Horizontal",
+      "fan": "Fan"
+    }
   },
   "changeRequests": {
     "queueTitle": "Review Queue",
@@ -443,6 +464,71 @@
       "expired": "Expired"
     }
   },
+  "documents": {
+    "title": "Documents",
+    "empty": "No documents attached.",
+    "hint": "Images or PDF, up to 10 MB. SVG is not allowed.",
+    "uploaded": "Document uploaded.",
+    "uploadFailed": "Upload failed.",
+    "deleted": "Document deleted.",
+    "deleteConfirm": "Delete this document?",
+    "svgRejected": "SVG files are not allowed.",
+    "tooLarge": "File exceeds the 10 MB limit."
+  },
+  "contributions": {
+    "type": "Contribution type",
+    "types": {
+      "add_person": "Add person",
+      "edit_data": "Edit data",
+      "fix_relation": "Fix relation",
+      "upload_document": "Upload document",
+      "add_source": "Add source",
+      "add_biography": "Add biography"
+    }
+  },
+  "dashboard": {
+    "title": "Tribe Dashboard",
+    "refreshedAt": "Updated",
+    "totalPersons": "Total persons",
+    "living": "Living",
+    "deceased": "Deceased",
+    "generations": "Generations",
+    "units": "Tribal units",
+    "pendingChangeRequests": "Pending requests",
+    "contributors": "Contributors",
+    "genderSplit": "Gender split",
+    "livingDeceased": "Living vs deceased",
+    "byGeneration": "Persons by generation",
+    "noGenerationData": "No generation data yet.",
+    "generationAxis": "Generation depth from the roots"
+  },
+  "reputation": {
+    "myTitle": "My Reputation",
+    "none": "You have no contributions in this tribe yet.",
+    "trustLevel": "Trust level",
+    "total": "Total",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "accuracy": "Accuracy",
+    "trust": {
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold"
+    },
+    "contributorsTitle": "Contributors",
+    "contributor": "Contributor",
+    "noContributors": "No contributors yet.",
+    "thresholdsTitle": "Reputation thresholds",
+    "thresholdsSubtitle": "Tune the trust levels and visitor-contribution policy for this tribe.",
+    "silverMinAccepted": "Silver — min accepted",
+    "goldMinAccepted": "Gold — min accepted",
+    "silverMinAccuracy": "Silver — min accuracy",
+    "goldMinAccuracy": "Gold — min accuracy",
+    "maxPending": "Max pending per contributor",
+    "allowViewerContributions": "Allow visitor (Viewer) suggestions",
+    "allowViewerHint": "Viewers may suggest limited corrections (edit data, add source) when enabled.",
+    "saved": "Thresholds saved."
+  },
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "auth": {
@@ -453,6 +539,13 @@
     "person": {
       "duplicateCandidates": "Similar persons already exist.",
       "versionConflict": "This record was modified by someone else."
+    },
+    "subscription": {
+      "plan_limit_reached": "This tribe has reached its plan's person limit. Upgrade the subscription to add more."
+    },
+    "contribution": {
+      "too_many_pending": "You have too many pending contributions. Wait for some to be reviewed.",
+      "viewer_disabled": "This tribe does not allow visitor suggestions."
     }
   },
   "primeng": {

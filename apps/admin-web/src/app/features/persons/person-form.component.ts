@@ -1,10 +1,11 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { TextareaModule } from 'primeng/textarea';
 import { AutoCompleteModule, AutoCompleteCompleteEvent } from 'primeng/autocomplete';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ButtonModule } from 'primeng/button';
@@ -17,8 +18,10 @@ import { ChangeRequestService } from '../../core/services/change-request.service
 import { AuthService } from '../../core/services/auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { buildCreatePatch, buildUpdatePatch } from '../../core/util/person-patch';
+import { PersonDocumentsComponent } from './person-documents.component';
 import type {
   ApiErrorBody,
+  ContributionType,
   CreatePersonDto,
   DuplicateCandidate,
   Gender,
@@ -33,14 +36,17 @@ import { DUPLICATE_MESSAGE_KEY, VERSION_CONFLICT_MESSAGE_KEY } from '../../core/
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     TranslatePipe,
     InputTextModule,
     SelectModule,
+    TextareaModule,
     AutoCompleteModule,
     CheckboxModule,
     ButtonModule,
     DialogModule,
     MessageModule,
+    PersonDocumentsComponent,
   ],
   template: `
     <div class="mx-auto max-w-3xl">
@@ -190,6 +196,30 @@ import { DUPLICATE_MESSAGE_KEY, VERSION_CONFLICT_MESSAGE_KEY } from '../../core/
           <input pInputText formControlName="profession" class="w-full" />
         </label>
 
+        <!-- Biography / story (sanitized server-side) -->
+        <label class="flex flex-col gap-1 md:col-span-2">
+          <span class="text-sm text-gray-700">{{ 'persons.fields.biography' | translate }}</span>
+          <textarea pTextarea formControlName="biography" rows="4" class="w-full"></textarea>
+          <small class="text-gray-400">{{ 'persons.hints.biography' | translate }}</small>
+        </label>
+
+        <!-- Contribution type (non-admin proposal path) -->
+        @if (!canWrite()) {
+          <label class="flex flex-col gap-1 md:col-span-2">
+            <span class="text-sm text-gray-700">{{ 'contributions.type' | translate }}</span>
+            <p-select
+              [(ngModel)]="contributionType"
+              [ngModelOptions]="{ standalone: true }"
+              [options]="contributionOptions()"
+              optionValue="value"
+              styleClass="w-full sm:w-80"
+            >
+              <ng-template let-o pTemplate="selectedItem">{{ o.labelKey | translate }}</ng-template>
+              <ng-template let-o pTemplate="item">{{ o.labelKey | translate }}</ng-template>
+            </p-select>
+          </label>
+        }
+
         @if (errorKey()) {
           <div class="md:col-span-2">
             <p-message severity="error" [text]="errorKey()! | translate" />
@@ -212,6 +242,13 @@ import { DUPLICATE_MESSAGE_KEY, VERSION_CONFLICT_MESSAGE_KEY } from '../../core/
           />
         </div>
       </form>
+
+      <!-- Documents (M4) — admins manage documents on an existing person directly. -->
+      @if (isEdit() && canWrite() && id(); as pid) {
+        <div class="mt-6">
+          <app-person-documents [personId]="pid" />
+        </div>
+      }
     </div>
 
     <!-- Duplicate-candidate confirmation (Spec Section 8) -->
@@ -287,6 +324,17 @@ export class PersonFormComponent {
   /** Original entity kept for computing an update JSON Patch on the non-admin path. */
   private original: Person | null = null;
 
+  /** Selected contribution type for the non-admin proposal path (M4 §13). */
+  contributionType: ContributionType = 'add_person';
+
+  /** Contribution options depend on create vs edit (Spec §13). */
+  readonly contributionOptions = computed(() => {
+    const opts: ContributionType[] = this.isEdit()
+      ? ['edit_data', 'fix_relation', 'add_biography', 'add_source']
+      : ['add_person'];
+    return opts.map((t) => ({ value: t, labelKey: `contributions.types.${t}` }));
+  });
+
   readonly genderOptions = [
     { label: this.i18n.instant('persons.genderValue.male'), value: 'male' as Gender },
     { label: this.i18n.instant('persons.genderValue.female'), value: 'female' as Gender },
@@ -317,6 +365,7 @@ export class PersonFormComponent {
     mother: this.fb.control<Person | null>(null),
     tribalUnitId: this.fb.control<string | null>(null),
     profession: [''],
+    biography: [''],
   });
 
   constructor() {
@@ -327,7 +376,10 @@ export class PersonFormComponent {
     // Load the person after inputs are bound (microtask keeps id() populated).
     queueMicrotask(() => {
       const id = this.id();
-      if (id) this.loadPerson(id);
+      if (id) {
+        this.contributionType = 'edit_data';
+        this.loadPerson(id);
+      }
     });
   }
 
@@ -350,6 +402,7 @@ export class PersonFormComponent {
           deathPlace: p.deathPlace ?? '',
           tribalUnitId: p.tribalUnitId ?? null,
           profession: p.profession ?? '',
+          biography: p.biography ?? '',
         });
         // Resolve parent display objects lazily.
         if (p.fatherId) this.hydrateParent(p.fatherId, 'father');
@@ -395,6 +448,7 @@ export class PersonFormComponent {
       motherId: v.mother?.id,
       tribalUnitId: v.tribalUnitId || undefined,
       profession: v.profession || undefined,
+      biography: v.biography || undefined,
       confirmDuplicate: confirmDuplicate || undefined,
     };
   }
@@ -437,6 +491,7 @@ export class PersonFormComponent {
         targetId: id,
         operation: id ? 'update' : 'create',
         patch,
+        contributionType: this.contributionType,
       })
       .subscribe({
         next: (cr) => {

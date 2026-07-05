@@ -99,6 +99,23 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/stats/tribe-stats-dashboard.component').then(
+            (m) => m.TribeStatsDashboardComponent,
+          ),
+      },
+      {
+        path: 'reputation',
+        loadComponent: () =>
+          import('./features/reputation/contributors.component').then((m) => m.ContributorsComponent),
+      },
+      {
+        path: 'my-reputation',
+        loadComponent: () =>
+          import('./features/reputation/my-reputation.component').then((m) => m.MyReputationComponent),
+      },
+      {
         path: 'imports',
         loadComponent: () =>
           import('./features/imports/imports-list.component').then((m) => m.ImportsListComponent),

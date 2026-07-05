@@ -11,11 +11,14 @@
     "tribalUnits": "الوحدات القبلية",
     "tree": "شجرة العائلة",
     "settings": "إعدادات القبيلة",
+    "dashboard": "لوحة المعلومات",
     "reviewQueue": "قائمة المراجعة",
     "myRequests": "طلباتي",
+    "myReputation": "سمعتي",
     "imports": "الاستيراد الجماعي",
     "workflow": "إعدادات سير العمل",
     "visibility": "الرؤية والخصوصية",
+    "reputation": "المساهمون",
     "viewRequests": "طلبات المشاهدة",
     "switchLanguage": "تبديل اللغة",
     "logout": "تسجيل الخروج",
@@ -40,6 +43,8 @@
     "title": "الأشخاص",
     "new": "إضافة شخص",
     "propose": "اقتراح شخص",
+    "exportXlsx": "إكسل",
+    "exportCsv": "CSV",
     "proposalNotice": "لست مسؤولاً. سيؤدي الحفظ إلى إرسال هذا كطلب تغيير للمراجعة.",
     "newTitle": "شخص جديد",
     "editTitle": "تعديل شخص",
@@ -66,10 +71,12 @@
       "mother": "الأم",
       "tribalUnit": "الوحدة القبلية",
       "profession": "المهنة",
+      "biography": "السيرة / القصة",
       "status": "الحالة"
     },
     "hints": {
-      "partialDate": "يُقبل إدخال السنة فقط (مثال: 1965 أو 1965-03-12)."
+      "partialDate": "يُقبل إدخال السنة فقط (مثال: 1965 أو 1965-03-12).",
+      "biography": "قصة قصيرة أو سيرة. تُنقّى التنسيقات عند الحفظ."
     },
     "genderValue": {
       "male": "ذكر",
@@ -129,7 +136,21 @@
     "title": "شجرة العائلة",
     "reload": "إعادة التحميل",
     "empty": "لا توجد بيانات شجرة.",
-    "m1Notice": "معاينة أساسية للشجرة. العارض التفاعلي عالي التفاصيل يأتي في مرحلة لاحقة."
+    "search": "ابحث في الشجرة…",
+    "find": "بحث",
+    "notFound": "لا يوجد شخص مطابق في الشجرة المحمّلة.",
+    "measure": "المسار بين شخصين",
+    "measureHint": "انقر على شخصين لتمييز مسار النسب.",
+    "fit": "ملاءمة",
+    "highlighted": "مميَّز",
+    "canvasMode": "شجرة كبيرة — تُرسم على Canvas مع مستوى تفصيل للأداء.",
+    "exportPdf": "PDF",
+    "exportPng": "PNG",
+    "layout": {
+      "vertical": "عمودي",
+      "horizontal": "أفقي",
+      "fan": "مروحة"
+    }
   },
   "changeRequests": {
     "queueTitle": "قائمة المراجعة",
@@ -443,6 +464,71 @@
       "expired": "منتهٍ"
     }
   },
+  "documents": {
+    "title": "الوثائق",
+    "empty": "لا توجد وثائق مرفقة.",
+    "hint": "صور أو PDF، حتى 10 ميجابايت. SVG غير مسموح.",
+    "uploaded": "تم رفع الوثيقة.",
+    "uploadFailed": "فشل الرفع.",
+    "deleted": "تم حذف الوثيقة.",
+    "deleteConfirm": "حذف هذه الوثيقة؟",
+    "svgRejected": "ملفات SVG غير مسموحة.",
+    "tooLarge": "يتجاوز الملف حد 10 ميجابايت."
+  },
+  "contributions": {
+    "type": "نوع المساهمة",
+    "types": {
+      "add_person": "إضافة شخص",
+      "edit_data": "تعديل بيانات",
+      "fix_relation": "تصحيح علاقة",
+      "upload_document": "رفع وثيقة",
+      "add_source": "إضافة مصدر",
+      "add_biography": "إضافة سيرة"
+    }
+  },
+  "dashboard": {
+    "title": "لوحة معلومات القبيلة",
+    "refreshedAt": "آخر تحديث",
+    "totalPersons": "إجمالي الأشخاص",
+    "living": "أحياء",
+    "deceased": "متوفون",
+    "generations": "الأجيال",
+    "units": "الوحدات القبلية",
+    "pendingChangeRequests": "طلبات معلّقة",
+    "contributors": "المساهمون",
+    "genderSplit": "توزيع الجنس",
+    "livingDeceased": "الأحياء مقابل المتوفين",
+    "byGeneration": "الأشخاص حسب الجيل",
+    "noGenerationData": "لا توجد بيانات أجيال بعد.",
+    "generationAxis": "عمق الجيل من الجذور"
+  },
+  "reputation": {
+    "myTitle": "سمعتي",
+    "none": "لا توجد لديك مساهمات في هذه القبيلة بعد.",
+    "trustLevel": "مستوى الثقة",
+    "total": "الإجمالي",
+    "accepted": "مقبولة",
+    "rejected": "مرفوضة",
+    "accuracy": "الدقة",
+    "trust": {
+      "bronze": "برونزي",
+      "silver": "فضي",
+      "gold": "ذهبي"
+    },
+    "contributorsTitle": "المساهمون",
+    "contributor": "المساهم",
+    "noContributors": "لا يوجد مساهمون بعد.",
+    "thresholdsTitle": "عتبات السمعة",
+    "thresholdsSubtitle": "اضبط مستويات الثقة وسياسة مساهمات الزوار لهذه القبيلة.",
+    "silverMinAccepted": "الفضي — أدنى عدد مقبول",
+    "goldMinAccepted": "الذهبي — أدنى عدد مقبول",
+    "silverMinAccuracy": "الفضي — أدنى دقة",
+    "goldMinAccuracy": "الذهبي — أدنى دقة",
+    "maxPending": "أقصى عدد معلّق لكل مساهم",
+    "allowViewerContributions": "السماح باقتراحات الزوار (المُشاهِدين)",
+    "allowViewerHint": "يمكن للمُشاهِدين اقتراح تصحيحات محدودة (تعديل بيانات، إضافة مصدر) عند التفعيل.",
+    "saved": "تم حفظ العتبات."
+  },
   "errors": {
     "generic": "حدث خطأ ما. يرجى المحاولة مجدداً.",
     "auth": {
@@ -453,6 +539,13 @@
     "person": {
       "duplicateCandidates": "يوجد أشخاص مشابهون بالفعل.",
       "versionConflict": "تم تعديل هذا السجل من قبل مستخدم آخر."
+    },
+    "subscription": {
+      "plan_limit_reached": "بلغت هذه القبيلة حد خطتها من الأشخاص. رقّ الاشتراك لإضافة المزيد."
+    },
+    "contribution": {
+      "too_many_pending": "لديك عدد كبير من المساهمات المعلّقة. انتظر مراجعة بعضها.",
+      "viewer_disabled": "لا تسمح هذه القبيلة باقتراحات الزوار."
     }
   },
   "primeng": {

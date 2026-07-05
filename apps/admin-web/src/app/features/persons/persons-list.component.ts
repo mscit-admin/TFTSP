@@ -10,7 +10,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { PersonService } from '../../core/services/person.service';
 import { AuthService } from '../../core/services/auth.service';
-import type { Person } from '../../core/models';
+import { ExportService } from '../../core/services/export.service';
+import type { Person, TableExportFormat } from '../../core/models';
 
 @Component({
   selector: 'app-persons-list',
@@ -30,13 +31,33 @@ import type { Person } from '../../core/models';
     <div class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-xl font-semibold text-gray-800">{{ 'persons.title' | translate }}</h1>
-        <!-- Admins create directly; non-admins reach the form to propose a Change Request (M2). -->
-        <p-button
-          icon="pi pi-plus"
-          [label]="(canWrite() ? 'persons.new' : 'persons.propose') | translate"
-          routerLink="/persons/new"
-          size="small"
-        />
+        <div class="flex items-center gap-2">
+          <p-button
+            icon="pi pi-file-excel"
+            [label]="'persons.exportXlsx' | translate"
+            severity="secondary"
+            [text]="true"
+            size="small"
+            [loading]="exporting()"
+            (onClick)="exportPersons('xlsx')"
+          />
+          <p-button
+            icon="pi pi-file"
+            [label]="'persons.exportCsv' | translate"
+            severity="secondary"
+            [text]="true"
+            size="small"
+            [loading]="exporting()"
+            (onClick)="exportPersons('csv')"
+          />
+          <!-- Admins create directly; non-admins reach the form to propose a Change Request (M2). -->
+          <p-button
+            icon="pi pi-plus"
+            [label]="(canWrite() ? 'persons.new' : 'persons.propose') | translate"
+            routerLink="/persons/new"
+            size="small"
+          />
+        </div>
       </div>
 
       <div class="max-w-md">
@@ -133,10 +154,12 @@ export class PersonsListComponent {
   private readonly confirm = inject(ConfirmationService);
   private readonly messages = inject(MessageService);
   private readonly i18n = inject(TranslateService);
+  private readonly exportService = inject(ExportService);
 
   readonly persons = signal<Person[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
+  readonly exporting = signal(false);
   readonly pageSize = 20;
   readonly canWrite = this.auth.canWrite;
 
@@ -197,6 +220,25 @@ export class PersonsListComponent {
           error: () =>
             this.messages.add({ severity: 'error', detail: this.tr('errors.generic') }),
         });
+      },
+    });
+  }
+
+  exportPersons(format: TableExportFormat): void {
+    this.exporting.set(true);
+    this.exportService.persons(format).subscribe({
+      next: (blob) => {
+        this.exporting.set(false);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `persons.${format}`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.exporting.set(false);
+        this.messages.add({ severity: 'error', detail: this.tr('errors.generic') });
       },
     });
   }

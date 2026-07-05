@@ -22,6 +22,8 @@ export interface Person {
   tribalUnitId?: string | null;
   profession?: string | null;
   photoKey?: string | null;
+  /** M4 §13 — sanitized rich-text biography/story (approved like any change). */
+  biography?: string | null;
   status: PersonStatus;
   version: number; // optimistic locking
   createdBy: string;
@@ -46,6 +48,7 @@ export interface CreatePersonDto {
   motherId?: string;
   tribalUnitId?: string;
   profession?: string;
+  biography?: string;
   /** required to proceed when duplicate candidates (similarity >= 0.6) were returned */
   confirmDuplicate?: boolean;
 }
