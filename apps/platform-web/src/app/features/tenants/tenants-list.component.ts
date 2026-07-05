@@ -11,8 +11,13 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { PlatformService } from '../../core/services/platform.service';
+import { PlatformStatsService } from '../../core/services/platform-stats.service';
 import { LanguageService } from '../../core/services/language.service';
 import { CreateTenantRequest, TenantRow } from '../../core/models/tenant.model';
+import {
+  SubscriptionManagerComponent,
+  daysUntil,
+} from './subscription-manager.component';
 
 @Component({
   selector: 'pw-tenants-list',
@@ -26,6 +31,7 @@ import { CreateTenantRequest, TenantRow } from '../../core/models/tenant.model';
     TagModule,
     InputTextModule,
     ToastModule,
+    SubscriptionManagerComponent,
   ],
   providers: [MessageService],
   template: `
@@ -64,8 +70,20 @@ import { CreateTenantRequest, TenantRow } from '../../core/models/tenant.model';
           </tr>
         </ng-template>
         <ng-template #body let-t>
-          <tr>
-            <td class="font-medium">{{ nameFor(t) }}</td>
+          <tr [class.bg-amber-50]="isExpiringSoon(t.id)">
+            <td class="font-medium">
+              {{ nameFor(t) }}
+              @if (expiryBadge(t.id); as badge) {
+                <span
+                  class="ms-2 align-middle text-[11px] px-1.5 py-0.5 rounded border"
+                  [class]="badge.expired
+                    ? 'bg-red-50 text-red-700 border-red-200'
+                    : 'bg-amber-100 text-amber-800 border-amber-300'"
+                >
+                  <i class="pi pi-clock text-[10px] me-1"></i>{{ badge.label | translate: badge.params }}
+                </span>
+              }
+            </td>
             <td><code class="text-xs text-slate-500">{{ t.slug }}</code></td>
             <td class="text-center">{{ t.personsCount | number }}</td>
             <td class="text-center">{{ t.usersCount | number }}</td>
@@ -75,7 +93,18 @@ import { CreateTenantRequest, TenantRow } from '../../core/models/tenant.model';
                 [severity]="t.status === 'active' ? 'success' : 'danger'"
               />
             </td>
-            <td class="text-end">
+            <td class="text-end whitespace-nowrap">
+              <button
+                pButton
+                type="button"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                icon="pi pi-credit-card"
+                [label]="'subscription.manage' | translate"
+                class="me-2"
+                (click)="openManage(t)"
+              ></button>
               @if (t.status === 'active') {
                 <button
                   pButton
@@ -183,10 +212,21 @@ import { CreateTenantRequest, TenantRow } from '../../core/models/tenant.model';
         </div>
       </form>
     </p-dialog>
+
+    <!-- Per-tribe subscription management (M4) -->
+    @if (manageTenant(); as mt) {
+      <pw-subscription-manager
+        [tenantId]="mt.id"
+        [tenantName]="nameFor(mt)"
+        [(visible)]="manageOpen"
+        (saved)="onSubscriptionSaved()"
+      />
+    }
   `,
 })
 export class TenantsListComponent {
   private readonly platform = inject(PlatformService);
+  private readonly stats = inject(PlatformStatsService);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(MessageService);
   private readonly i18n = inject(TranslateService);
@@ -198,6 +238,12 @@ export class TenantsListComponent {
   readonly dialogOpen = signal(false);
   readonly saving = signal(false);
   readonly formError = signal<string | null>(null);
+
+  // Subscription management + expiry alerts (M4).
+  readonly manageTenant = signal<TenantRow | null>(null);
+  readonly manageOpen = signal(false);
+  /** tenantId -> expiresAt ISO, from PlatformDashboard.expiringSoon (≤30 days). */
+  private readonly expiring = signal<Map<string, string>>(new Map());
 
   readonly form = this.fb.nonNullable.group({
     slug: [
@@ -220,6 +266,7 @@ export class TenantsListComponent {
 
   constructor() {
     this.load();
+    this.loadExpiring();
   }
 
   load(): void {
@@ -234,6 +281,45 @@ export class TenantsListComponent {
         this.notifyError('errors.loadFailed');
       },
     });
+  }
+
+  /** Best-effort: the dashboard's expiringSoon list feeds the per-row expiry badges. */
+  private loadExpiring(): void {
+    this.stats.dashboard().subscribe({
+      next: (d) => {
+        const map = new Map<string, string>();
+        for (const e of d.expiringSoon ?? []) map.set(e.tenantId, e.expiresAt);
+        this.expiring.set(map);
+      },
+      error: () => this.expiring.set(new Map()),
+    });
+  }
+
+  isExpiringSoon(tenantId: string): boolean {
+    return this.expiring().has(tenantId);
+  }
+
+  expiryBadge(
+    tenantId: string,
+  ): { label: string; params: { days: number }; expired: boolean } | null {
+    const iso = this.expiring().get(tenantId);
+    if (!iso) return null;
+    const days = daysUntil(iso) ?? 0;
+    return {
+      label: days < 0 ? 'subscription.expired' : 'subscription.expiresInDays',
+      params: { days: Math.abs(days) },
+      expired: days < 0,
+    };
+  }
+
+  openManage(t: TenantRow): void {
+    this.manageTenant.set(t);
+    this.manageOpen.set(true);
+  }
+
+  onSubscriptionSaved(): void {
+    this.notifySuccess('subscription.toast.saved');
+    this.loadExpiring();
   }
 
   openCreate(): void {

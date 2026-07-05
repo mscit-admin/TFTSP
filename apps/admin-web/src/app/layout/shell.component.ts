@@ -136,10 +136,14 @@ export class ShellComponent {
   /** Nav list is role-gated (review queue for reviewers/admins, settings for Tribe Admin). */
   readonly navItems = computed<NavItem[]>(() => {
     const items = [...this.baseNav];
+    if (this.auth.isTribeAdmin()) {
+      items.push({ route: '/dashboard', labelKey: 'nav.dashboard', icon: 'pi-chart-bar' });
+    }
     if (this.auth.canReview()) {
       items.push({ route: '/change-requests', labelKey: 'nav.reviewQueue', icon: 'pi-inbox' });
     }
     items.push({ route: '/my-requests', labelKey: 'nav.myRequests', icon: 'pi-file-edit' });
+    items.push({ route: '/my-reputation', labelKey: 'nav.myReputation', icon: 'pi-star' });
     // Bulk import is an admin write action (Tribe Admin / Deputy / Branch Admin).
     if (this.auth.canWrite()) {
       items.push({ route: '/imports', labelKey: 'nav.imports', icon: 'pi-upload' });
@@ -148,6 +152,7 @@ export class ShellComponent {
     if (this.auth.isTribeAdmin()) {
       items.push({ route: '/workflow-settings', labelKey: 'nav.workflow', icon: 'pi-sliders-h' });
       items.push({ route: '/visibility-settings', labelKey: 'nav.visibility', icon: 'pi-eye' });
+      items.push({ route: '/reputation', labelKey: 'nav.reputation', icon: 'pi-star-fill' });
       items.push({
         route: '/view-requests',
         labelKey: 'nav.viewRequests',

@@ -1,4 +1,4 @@
-# TFTSP API (Backend) — M1
+# TFTSP API (Backend) — M1–M4
 
 NestJS 10 + Prisma + PostgreSQL 16. Multi-tenant (Shared Schema + Row-Level
 Security), JWT auth, RBAC, persons/unions/lineage (closure table), audit, i18n.
@@ -91,8 +91,18 @@ Key tests:
 | View requests | `modules/view-requests` — public `POST /view-requests` (owner client, tenant via slug) notifies admins; Tribe Admin list/approve/reject. Approve creates a Viewer user + `role_assignments` row with mandatory `valid_to`. |
 | Grant expiry | `PolicyGuard` → 401 `errors.auth.grant_expired` when the only assignment(s) have lapsed. |
 
+## Architecture (M4 — Subscriptions, Documents, Exports, Stats, Crowdsourcing)
+
+| Concern | Where |
+|---|---|
+| Subscriptions & plan cap | `modules/subscriptions` — platform-level (owner client, outside RLS, `@SuperAdminOnly`). `plan-limits.ts` maps tier→cap (Free 500 / Basic 5,000 / Professional 25,000 / Enterprise unlimited). `PlanLimitService.assertCanAddPersons()` is the single Guard, wired into `persons.create` and import submit (supersedes the M2.5 `Tenant.max_persons`). Manual activation via a `PaymentGateway` abstraction (`ManualPaymentGateway`). Endpoints `GET/PUT /platform/tenants/:id/subscription`, `GET …/activations`. |
+| Person documents | `modules/documents` — `POST /documents/presign` (MinIO presigned PUT, 15-min) → client PUTs the bytes → `POST /documents/confirm` re-reads the **actual** first bytes, `detectFileKind` magic-byte check (**SVG rejected**, ≤10 MB), registers the row. `GET /persons/:id/documents` returns presigned GET URLs; `DELETE /documents/:id` soft-deletes. Every path first calls `persons.findOne` so an out-of-scope person → 404 (M3 resolver). |
+| Exports | `modules/exports` — `tree-html.ts` builds an escaped RTL Arabic document (`@page size`, deceased †) and is the unit-tested seam; `pdf-renderer.ts` uses **puppeteer-core** with an env-resolved `executablePath` (never downloads Chromium). `POST /exports/tree/{pdf,png}` stream A0–A4 PDF / scale-2·4 PNG; `GET /exports/persons.{xlsx,csv}` use the import-template columns (round-trip). All person data flows through the visibility resolver via `LineageService`. |
+| Statistics | `modules/stats` — PostgreSQL **materialized views** `tribe_stats_mv` / `platform_dashboard_mv` (refreshed hourly by BullMQ + on-demand `POST /stats/refresh`). Views have no RLS → read through the owner client with an explicit tenant filter; fast-changing counts (pending CRs, generations) are live-computed. `GET /stats/tribe` (Tribe Admin) / `GET /platform/stats/dashboard` (`@SuperAdminOnly`). |
+| Crowdsourcing & reputation | `modules/reputation` + extended `change-requests`. **No new engine** — a contribution is an M2 Change Request with an optional `contributionType`. `change-request.service` enforces: pending cap (`too_many_pending`), Viewer may only suggest `edit_data`/`add_source` and only when `allowViewerContributions` (`viewer_not_allowed`), target must be visible (→ 404). `ReputationService.recordDecision` bumps accepted/rejected on approve/reject, recomputes `accuracyRate`, re-derives `trustLevel` (no auto-promotion). `GET /reputation/me`, `GET /reputation` (ranked), `GET/PATCH /reputation/thresholds`. |
+
 Architecture decisions specific to the backend are logged in the repo-root
-`DECISIONS.md` (D-101 … D-314).
+`DECISIONS.md` (D-101 … D-407).
 
 ## Module conventions
 

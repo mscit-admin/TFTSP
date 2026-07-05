@@ -46,6 +46,14 @@ export class ApiService {
     return this.http.post<T>(this.url(path), body ?? {}, { context });
   }
 
+  /** Binary POST (e.g. server-rendered PDF/PNG tree export). */
+  postBlob(path: string, body?: unknown, params?: QueryParams): Observable<Blob> {
+    return this.http.post(this.url(path), body ?? {}, {
+      params: this.toParams(params),
+      responseType: 'blob',
+    });
+  }
+
   patch<T>(path: string, body?: unknown, context?: HttpContext): Observable<T> {
     return this.http.patch<T>(this.url(path), body ?? {}, { context });
   }

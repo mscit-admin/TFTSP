@@ -23,6 +23,20 @@
     "unsupported_type": "Unsupported file type. Only images (PNG/JPEG/WEBP/GIF) and PDF are accepted.",
     "svg_rejected": "SVG files are not allowed."
   },
+  "subscription": {
+    "plan_limit_reached": "This tribe has reached its plan's person limit. Upgrade the plan to add more.",
+    "not_found": "Subscription not found."
+  },
+  "document": {
+    "not_found": "Document not found."
+  },
+  "contribution": {
+    "too_many_pending": "You have too many pending contributions. Wait for them to be reviewed.",
+    "viewer_not_allowed": "This tribe does not allow viewer contributions, or this contribution type is not permitted for viewers."
+  },
+  "export": {
+    "failed": "Export generation failed."
+  },
   "tenant": {
     "not_found": "Tribe not found.",
     "slug_taken": "This slug is already in use.",

@@ -55,6 +55,8 @@ export interface CreateChangeRequestDto {
   targetId?: string;
   operation: ChangeOperation;
   patch: JsonPatchOp[];
+  /** M4 crowdsourcing (Spec §13): categorises the contribution; drives reputation. */
+  contributionType?: import('./reputation').ContributionType;
 }
 
 export type UpdateChangeRequestDto = Partial<Pick<CreateChangeRequestDto, 'patch'>>;

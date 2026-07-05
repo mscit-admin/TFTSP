@@ -10,3 +10,7 @@ export * from './change-request';
 export * from './notification';
 export * from './import';
 export * from './visibility';
+export * from './subscription';
+export * from './document';
+export * from './reputation';
+export * from './stats';

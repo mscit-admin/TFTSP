@@ -91,6 +91,23 @@ npm run build       # outputs to dist/admin-web
 - **Redaction tolerance:** person responses now omit blocked fields entirely (not null); the persons
   list, person form, and tree view coalesce absent `gender`/`name`/`isDeceased`/etc. so nothing crashes.
 
+### M4 — Advanced display, exports, stats, crowdsourcing
+
+| Area | Route | Notes |
+|---|---|---|
+| Advanced tree | `/tree` | **d3 v7** — vertical / horizontal / fan layouts, **Canvas+LOD above 1500 nodes** (SVG below), pan/zoom, lazy expand (+2 gens), in-tree search + camera move + path highlight, path-between-two (LCA), RTL mirroring, PDF (A0–A4) / PNG (2x/4x) export |
+| Persons export | `/persons` | Excel / CSV export buttons (server-rendered, import-template columns) |
+| Documents | person edit page | presign → PUT (MinIO) → confirm; list/download via presigned URLs, delete; 10 MB / no-SVG hints |
+| Dashboard | `/dashboard` | Tribe Admin — `GET /stats/tribe` stat tiles + inline-SVG charts (gender, living/deceased, by-generation) |
+| My reputation | `/my-reputation` | `GET /reputation/me` counters + trust level |
+| Contributors | `/reputation` | Tribe Admin — ranked contributors + thresholds editor (`allowViewerContributions`, `maxPending`) |
+
+- **Crowdsourcing:** the non-admin person "propose" path now carries a `contributionType` (and a
+  biography field); backend contribution errors (too-many-pending, viewer-disabled, plan-limit,
+  out-of-scope 404) surface via their i18n keys. No parallel workflow — it is still an M2 change request.
+- **Tree engine:** `features/tree/tree-graph.ts` is the pure layout engine (hierarchy from the father
+  edge, d3 tree/radial, RTL, bounds); the component owns SVG/Canvas rendering, `d3-zoom`, and interactions.
+
 ### Auth flow
 
 - `AuthService` holds session state as Signals; tokens live in `TokenStorageService`
@@ -111,12 +128,15 @@ npm run build       # outputs to dist/admin-web
 
 Components never call `HttpClient` (or the socket) directly. `ApiService` is the only HTTP
 surface; typed resource services (`PersonService`, `TribalUnitService`, `UnionService`,
-`TreeService`, `TenantSettingsService`, `AuthService`, plus M2's `ChangeRequestService`,
-`WorkflowSettingsService`, `NotificationService`, M2.5's `ImportService`, and M3's
-`VisibilityService` + `ViewRequestService`) sit on top of it. All Socket.IO wiring is confined to
-`NotificationService` (`/notifications`) and `ImportService` (`/imports`).
+`TreeService`, `TenantSettingsService`, `AuthService`, M2's `ChangeRequestService`,
+`WorkflowSettingsService`, `NotificationService`, M2.5's `ImportService`, M3's
+`VisibilityService` + `ViewRequestService`, and M4's `DocumentService`, `ExportService`,
+`StatsService`, `ReputationService`) sit on top of it. The one deliberate exception is the external
+MinIO presigned PUT in `DocumentService` (HttpClient + `SKIP_AUTH`). All Socket.IO wiring is confined
+to `NotificationService` (`/notifications`) and `ImportService` (`/imports`).
 
 ## Deliberately out of scope (current)
 
-Exports/subscriptions/crowdsourcing (M4), mobile (M5), and the rich d3/canvas tree renderer.
-See root `DECISIONS.md` (`D-2xx`) for the choices made.
+Mobile (M5); radial/timeline trees, GEDCOM, real payment gateways (Backlog). Subscription management
+UI lives in platform-web (Super Admin) — admin-web only consumes the plan-limit error. See root
+`DECISIONS.md` (`D-2xx`) for the choices made.

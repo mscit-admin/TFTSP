@@ -9,8 +9,11 @@ with a distinct "mission-control" dark shell to signal the different security bo
 - **PrimeNG 21** (Aura theme) + **Tailwind CSS v4**
 - **ngx-translate 18** — full **Arabic (RTL)** + **English (LTR)** with instant switch (no reload)
 
-> Scope: **M1 only** — Super Admin login, tribes list/create, suspend/activate, basic stats.
-> Subscriptions/plans, payments, and materialized-view dashboards are **out of scope** (M4).
+> Scope: **M1 + M4 (platform-web parts)** — Super Admin login, tribes list/create,
+> suspend/activate, basic stats (M1); per-tribe subscription management with manual
+> (bank-transfer) activation + activation log, plan-cap display, expiry alerts, and the
+> Super Admin statistics dashboard (M4). Tribe-admin, export, documents, and
+> crowdsourcing features live in `admin-web`; mobile is M5.
 
 ## Prerequisites
 
@@ -50,7 +53,9 @@ Runtime config lives in `src/environments/`:
 
 The dev proxy target lives in `proxy.conf.json` (default `http://localhost:3000`).
 
-## What it does (M1)
+## What it does
+
+### M1
 
 | Area           | Route         | API consumed                                            |
 | -------------- | ------------- | ------------------------------------------------------- |
@@ -59,6 +64,15 @@ The dev proxy target lives in `proxy.conf.json` (default `http://localhost:3000`
 | Tribes list    | `/tenants`    | `GET /platform/tenants` (with counts)                   |
 | Create tribe   | `/tenants` ▸ dialog | `POST /platform/tenants` (+ first Tribe Admin)    |
 | Suspend/Activate | `/tenants` ▸ row | `POST /platform/tenants/:id/suspend\|activate`     |
+
+### M4
+
+| Area           | Route         | API consumed                                            |
+| -------------- | ------------- | ------------------------------------------------------- |
+| Subscription management | `/tenants` ▸ row ▸ dialog | `GET`/`PUT /platform/tenants/:id/subscription` — tier picker (with `PLAN_LIMITS` caps), manual bank-transfer activation, expiry |
+| Activation log | (same dialog) | `GET /platform/tenants/:id/subscription/activations`    |
+| Expiry alerts  | `/tenants` (row badges) | fed by `PlatformDashboard.expiringSoon` (≤30 days) |
+| Statistics dashboard | `/statistics` | `GET /platform/stats/dashboard` → KPI cards, tribes-by-plan bar chart, expiring-soon table |
 
 Only users carrying the **super-admin claim** pass `superAdminGuard`; anyone else is
 bounced to `/login`. Tokens are stored in `localStorage`; the `authInterceptor` attaches
@@ -78,15 +92,17 @@ without a reload.
 src/app/
   app.ts / app.config.ts / app.routes.ts   # bootstrap, providers, lazy routes
   core/
-    models/        auth.model.ts, tenant.model.ts   # types mirrored from packages/shared-types
-    services/      auth, token-storage, platform, language   # thin typed data services
+    models/        auth, tenant, subscription, stats   # types mirrored from packages/shared-types
+    services/      auth, token-storage, platform, platform-stats, subscription, language
     interceptors/  auth.interceptor.ts               # bearer + silent refresh
     guards/        super-admin.guard.ts, guest.guard.ts
   layout/          shell.component.ts                 # topbar + nav + lang/logout
   features/
     auth/          login.component.ts
-    dashboard/     dashboard.component.ts             # stats cards
-    tenants/       tenants-list.component.ts          # table + create dialog + suspend/activate
+    dashboard/     dashboard.component.ts             # M1 stats cards
+                   platform-dashboard.component.ts    # M4 stats: KPIs + by-plan chart + expiring table
+    tenants/       tenants-list.component.ts          # table + create + suspend/activate + expiry badges
+                   subscription-manager.component.ts  # M4 per-tribe subscription dialog + activation log
 public/i18n/       ar.json, en.json
 ```
 

@@ -11,6 +11,7 @@ import { MinioService } from '../../common/minio/minio.service';
 import { AuditService } from '../audit/audit.service';
 import { ChangeRequestService } from '../change-requests/change-request.service';
 import { LineageService } from '../lineage/lineage.service';
+import { PlanLimitService } from '../subscriptions/plan-limit.service';
 import { ImportRepository } from './import.repository';
 import { ImportDispatcher } from './import.dispatcher';
 import { streamUploadToMinio } from './parsing/upload.util';
@@ -28,6 +29,7 @@ export class ImportService {
     private readonly lineage: LineageService,
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    private readonly planLimit: PlanLimitService,
     @Inject(forwardRef(() => ChangeRequestService))
     private readonly changeRequests: ChangeRequestService,
   ) {}
@@ -151,19 +153,9 @@ export class ImportService {
       throw AppException.badRequest(ErrorKeys.IMPORT_NOTHING_TO_IMPORT);
     }
 
-    // Plan-limit guard BEFORE processing (Spec §12 / D-301).
-    const [current, max] = await Promise.all([
-      this.repo.ownerPersonCount(tenantId),
-      this.repo.ownerTenantMaxPersons(tenantId),
-    ]);
-    if (current + creating > max) {
-      throw AppException.badRequest(ErrorKeys.IMPORT_PLAN_LIMIT_EXCEEDED, {
-        current,
-        max,
-        available: Math.max(0, max - current),
-        requested: creating,
-      });
-    }
+    // Plan-cap guard BEFORE processing — now derived from the subscription tier
+    // (M4 supersedes the M2.5 max_persons stand-in; Spec §M4.4 / D-401).
+    await this.planLimit.assertCanAddPersons(creating, tenantId);
 
     // ONE change request into the M2 workflow (never a direct write).
     const cr = await this.changeRequests.create(

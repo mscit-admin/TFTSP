@@ -29,7 +29,13 @@ export type Permission =
   | 'import.rollback'
   | 'visibilitySettings.read'
   | 'visibilitySettings.update'
-  | 'viewRequest.manage';
+  | 'viewRequest.manage'
+  | 'document.read'
+  | 'document.write'
+  | 'export.read'
+  | 'stats.read'
+  | 'reputation.read'
+  | 'reputation.manage';
 
 /** Reviewer/approver roles (Spec §3 M2). */
 export const M2_REVIEW_ROLES: Role[] = [Role.tribe_admin, Role.deputy_admin, Role.reviewer];
@@ -61,12 +67,15 @@ export const PERMISSION_MATRIX: Record<Permission, Role[]> = {
   'tenant.read': [Role.tribe_admin, Role.deputy_admin],
   'tenant.update': [Role.tribe_admin, Role.deputy_admin],
   // Change requests (M2): non-admins route edits through these; admins may too.
+  // Viewer is allowed to REACH the endpoint (M4 §13) but the service restricts
+  // viewers to edit_data/add_source and only when the tribe enables it.
   'changeRequest.create': [
     Role.tribe_admin,
     Role.deputy_admin,
     Role.branch_admin,
     Role.reviewer,
     Role.contributor,
+    Role.viewer,
   ],
   'changeRequest.read': READ_ROLES,
   'changeRequest.review': [Role.tribe_admin, Role.deputy_admin, Role.reviewer],
@@ -81,6 +90,13 @@ export const PERMISSION_MATRIX: Record<Permission, Role[]> = {
   'visibilitySettings.read': [Role.tribe_admin, Role.deputy_admin],
   'visibilitySettings.update': [Role.tribe_admin, Role.deputy_admin],
   'viewRequest.manage': [Role.tribe_admin, Role.deputy_admin],
+  // Documents / exports / stats / reputation (M4).
+  'document.read': READ_ROLES,
+  'document.write': [Role.tribe_admin, Role.deputy_admin, Role.branch_admin],
+  'export.read': READ_ROLES,
+  'stats.read': [Role.tribe_admin, Role.deputy_admin],
+  'reputation.read': READ_ROLES,
+  'reputation.manage': [Role.tribe_admin, Role.deputy_admin],
 };
 
 /**
