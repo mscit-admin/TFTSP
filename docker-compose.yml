@@ -38,6 +38,8 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      # Allow the browser (served from the gateway origin) to PUT/GET presigned URLs.
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -74,6 +76,10 @@ services:
       DATABASE_MIGRATION_URL: "postgresql://tftsp:tftsp_dev_pw@postgres:5432/tftsp?schema=public"
       REDIS_HOST: "redis"
       MINIO_ENDPOINT: "minio"
+      # Presigned document/photo URLs are signed for this browser-reachable host
+      # (set PUBLIC_HOST to your server's public IP in .env). Defaults to localhost.
+      MINIO_PUBLIC_ENDPOINT: "${PUBLIC_HOST:-localhost}"
+      MINIO_PUBLIC_PORT: "9000"
       SMTP_HOST: "mailhog"
     # Bound to localhost only — the app is reached through the gateway on ${TFTSP_PORT}.
     ports:

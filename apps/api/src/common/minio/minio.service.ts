@@ -11,18 +11,41 @@ import { Readable } from 'node:stream';
 @Injectable()
 export class MinioService implements OnModuleInit {
   private readonly logger = new Logger(MinioService.name);
+  /** Internal client — all server-side object ops (put/get/stat/bucket). */
   private readonly client: Client;
+  /**
+   * Presign client — signs browser-facing URLs. When `MINIO_PUBLIC_ENDPOINT` is set
+   * (e.g. a server's public IP), presigned URLs are signed for that host so a browser
+   * can reach them, even though the API connects over the internal Docker hostname.
+   * Presigning is a local computation, so this client never opens a connection.
+   */
+  private readonly presignClient: Client;
   readonly bucket: string;
 
   constructor(config: ConfigService) {
     this.bucket = config.get<string>('MINIO_BUCKET') ?? 'tftsp';
+    const accessKey = config.get<string>('MINIO_ACCESS_KEY') ?? 'minioadmin';
+    const secretKey = config.get<string>('MINIO_SECRET_KEY') ?? 'minioadmin';
     this.client = new Client({
       endPoint: config.get<string>('MINIO_ENDPOINT') ?? 'localhost',
       port: parseInt(config.get<string>('MINIO_PORT') ?? '9000', 10),
       useSSL: (config.get<string>('MINIO_USE_SSL') ?? 'false') === 'true',
-      accessKey: config.get<string>('MINIO_ACCESS_KEY') ?? 'minioadmin',
-      secretKey: config.get<string>('MINIO_SECRET_KEY') ?? 'minioadmin',
+      accessKey,
+      secretKey,
     });
+    const publicEndpoint = config.get<string>('MINIO_PUBLIC_ENDPOINT');
+    this.presignClient = publicEndpoint
+      ? new Client({
+          endPoint: publicEndpoint,
+          port: parseInt(
+            config.get<string>('MINIO_PUBLIC_PORT') ?? config.get<string>('MINIO_PORT') ?? '9000',
+            10,
+          ),
+          useSSL: (config.get<string>('MINIO_PUBLIC_USE_SSL') ?? 'false') === 'true',
+          accessKey,
+          secretKey,
+        })
+      : this.client;
   }
 
   async onModuleInit(): Promise<void> {
@@ -54,12 +77,12 @@ export class MinioService implements OnModuleInit {
 
   /** Presigned PUT URL (default 15-min TTL) for direct browser upload (Spec §M4.3). */
   presignedPut(key: string, expirySeconds = 900): Promise<string> {
-    return this.client.presignedPutObject(this.bucket, key, expirySeconds);
+    return this.presignClient.presignedPutObject(this.bucket, key, expirySeconds);
   }
 
-  /** Presigned GET URL (default 15-min TTL); never a public URL. */
+  /** Presigned GET URL (default 15-min TTL); signed for the browser-facing endpoint. */
   presignedGet(key: string, expirySeconds = 900): Promise<string> {
-    return this.client.presignedGetObject(this.bucket, key, expirySeconds);
+    return this.presignClient.presignedGetObject(this.bucket, key, expirySeconds);
   }
 
   async stat(key: string): Promise<{ size: number }> {

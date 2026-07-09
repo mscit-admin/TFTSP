@@ -12,6 +12,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Chromium for the puppeteer-core PDF/PNG tree export (+ Arabic-capable fonts for RTL).
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont font-noto font-noto-arabic
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 COPY package.json package-lock.json* ./
 RUN npm install --omit=dev && npm cache clean --force
 COPY prisma ./prisma

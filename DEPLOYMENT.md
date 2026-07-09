@@ -15,10 +15,20 @@ After it finishes (default port 8080):
 - API docs (Swagger) → `http://<host>:8080/api/docs`
 - Demo Super Admin → `superadmin@tftsp.local` / `ChangeMe!2026_seed`
 
-> **Trial caveat:** in a single-host Docker trial, document upload & photo preview use MinIO **presigned URLs**
-> that point at the internal `minio` host, so they may not open from your browser. Everything else (auth,
-> people, tree, change requests, import, visibility, dashboards, subscriptions) works. On a real server with a
-> domain, expose MinIO/S3 at a browser-reachable address and set `MINIO_ENDPOINT` accordingly.
+### Bare public IP — no domain, no HTTPS
+This is fully supported by `./install.sh`:
+1. Run `./install.sh` on the server; when asked, enter your **public IP** as the host and pick a port (e.g. `8080`).
+2. **Open two ports** in the OS firewall **and** the cloud security group:
+   - the app port you chose (e.g. `8080`) — web UI + API
+   - **`9000`** — MinIO, for document/photo upload & preview (presigned URLs are signed for `PUBLIC_HOST:9000`)
+3. Access at `http://<PUBLIC_IP>:<port>/` (Tribe Admin) and `/platform/` (Super Admin). The Angular apps call
+   the API with **relative** paths, so no domain is needed; document/photo URLs are signed for your public IP
+   so they open from the browser (the installer set `MINIO_PUBLIC_ENDPOINT`, and MinIO CORS is `*`).
+
+> **Security over plain HTTP:** without TLS, JWTs and data travel unencrypted — fine for a demo/internal
+> network, **not** for production with real personal data. For production put a TLS reverse proxy (Caddy/Nginx
+> with a free Let's Encrypt cert) in front once you have a domain, and set `MINIO_PUBLIC_USE_SSL=true`.
+> If you only have an IP, a self-signed cert or an SSH tunnel is the interim option.
 
 ---
 

@@ -42,6 +42,11 @@ TFTSP_PORT="${TFTSP_PORT:-$DEFAULT_PORT}"
 [[ "$TFTSP_PORT" =~ ^[0-9]+$ ]] && [ "$TFTSP_PORT" -ge 1 ] && [ "$TFTSP_PORT" -le 65535 ] \
   || die "منفذ غير صالح / Invalid port: $TFTSP_PORT"
 
+# ---- 2b) public host / IP (for browser-reachable document & photo URLs) ----
+DETECTED_IP="$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || curl -fsS --max-time 5 https://ifconfig.me 2>/dev/null || echo localhost)"
+read -r -p "العنوان العام للخادم (IP)؟ / Public host/IP [${DETECTED_IP}]: " PUBLIC_HOST
+PUBLIC_HOST="${PUBLIC_HOST:-$DETECTED_IP}"
+
 # ---- 3) seed demo data? ----
 read -r -p "بذر بيانات تجريبية (Super Admin + قبيلتان)؟ / Seed demo data? [Y/n]: " SEED_ANS
 SEED_ANS="${SEED_ANS:-Y}"
@@ -78,9 +83,10 @@ set_env() { # key value
   else printf '%s="%s"\n' "$1" "$2" >> .env; fi
 }
 set_env TFTSP_PORT "$TFTSP_PORT"
+set_env PUBLIC_HOST "$PUBLIC_HOST"
 set_env JWT_ACCESS_SECRET  "$(rand)"
 set_env JWT_REFRESH_SECRET "$(rand)"
-ok "ضُبط المنفذ وأسرار JWT في .env"
+ok "ضُبط المنفذ والعنوان العام وأسرار JWT في .env"
 
 # ---- build & start ----
 say "بناء وتشغيل الحاويات (قد يستغرق عدة دقائق أول مرة) …"
@@ -104,11 +110,15 @@ if [[ "$SEED_ANS" =~ ^[Yy]$ ]]; then
 fi
 
 # ---- done ----
+PUBURL="http://${PUBLIC_HOST}:${TFTSP_PORT}"
 say ""
 say "${GREEN}${BOLD}اكتمل التنصيب / Installation complete${NC}"
-say "لوحة القبيلة  / Tribe Admin panel : ${BOLD}${URL}/${NC}"
-say "لوحة المنصّة  / Super-Admin panel  : ${BOLD}${URL}/platform/${NC}"
-say "توثيق الـ API / API docs (Swagger) : ${BOLD}${URL}/api/docs${NC}"
+say "لوحة القبيلة  / Tribe Admin panel : ${BOLD}${PUBURL}/${NC}"
+say "لوحة المنصّة  / Super-Admin panel  : ${BOLD}${PUBURL}/platform/${NC}"
+say "توثيق الـ API / API docs (Swagger) : ${BOLD}${PUBURL}/api/docs${NC}"
+say ""
+say "${YELLOW}افتح المنفذين في الجدار الناري / open these ports in the firewall & cloud security group:${NC}"
+say "  ${BOLD}${TFTSP_PORT}${NC} (الواجهة+الـAPI / web+API)   ${BOLD}9000${NC} (الوثائق والصور / documents & photos)"
 if [[ "$SEED_ANS" =~ ^[Yy]$ ]]; then
   say ""
   say "دخول تجريبي / Demo login (Super Admin):"
